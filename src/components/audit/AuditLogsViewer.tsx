@@ -141,7 +141,7 @@ export const AuditLogsViewer: React.FC<AuditLogsViewerProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search audit trail by user, description, or Case ID..."
+              placeholder="Search audit trail by user, description, or Client Application Number..."
               className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23]"
             />
           </div>

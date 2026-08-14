@@ -44,7 +44,7 @@ export async function saveToPersistentDB(data: Partial<PersistentStore>): Promis
     const merged: PersistentStore = {
       rawCases: data.rawCases ?? existing?.rawCases ?? [],
       colConfig: data.colConfig ?? existing?.colConfig ?? {
-        colCaseId: 'case_id',
+        colClientApplicationNumber: 'client_application_number',
         colClient: 'client_name',
         colKM: 'KM_Running_One_Side',
         colKMFed: 'KM feeded by MIS',

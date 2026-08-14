@@ -248,7 +248,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <div className="flex items-start gap-3 border-l-2 border-slate-200 pl-3 py-0.5">
               <div className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Rule Match</div>
               <div className="text-xs">
-                <span className="font-bold text-[#2d3e50]">Deduplication</span> resolved duplicate records by Case ID
+                <span className="font-bold text-[#2d3e50]">Deduplication</span> resolved duplicate records by Client Application Number
               </div>
             </div>
 
@@ -361,7 +361,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
                 <tr>
-                  <th className="px-6 py-3">Case ID</th>
+                  <th className="px-6 py-3">Client Application Number</th>
                   <th className="px-6 py-3">Client Name</th>
                   <th className="px-6 py-3">Applicant Name</th>
                   <th className="px-6 py-3">KM / Slab</th>
@@ -372,8 +372,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 {recentCases.map((c) => (
-                  <tr key={c.caseId} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-3.5 font-mono font-bold text-[#2d3e50]">#{c.caseId}</td>
+                  <tr key={c.clientApplicationNumber} className="hover:bg-slate-50/80 transition">
+                    <td className="px-6 py-3.5 font-mono font-bold text-[#2d3e50]">#{c.clientApplicationNumber}</td>
                     <td className="px-6 py-3.5 font-semibold text-slate-800">{c.clientDb || c.clientRaw}</td>
                     <td className="px-6 py-3.5 text-slate-600">{c.applicantName}</td>
                     <td className="px-6 py-3.5">

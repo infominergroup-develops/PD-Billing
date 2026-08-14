@@ -222,7 +222,7 @@ function MainBillingApp() {
     if (updatedCase.isManualOverride) {
       setOverrides((prev) => ({
         ...prev,
-        [updatedCase.caseId]: {
+        [updatedCase.clientApplicationNumber]: {
           rate: updatedCase.billingRate,
           reason: reason || updatedCase.overrideReason || 'Manual adjustment',
         },
@@ -231,14 +231,14 @@ function MainBillingApp() {
 
     addAuditLog(
       'OVERRIDE_RATE',
-      `Updated case ${updatedCase.caseId} (Rate: ₹${updatedCase.billingRate}) - ${reason || 'Record edit'}`,
-      { targetId: updatedCase.caseId, newValue: `₹${updatedCase.billingRate}` }
+      `Updated case ${updatedCase.clientApplicationNumber} (Rate: ₹${updatedCase.billingRate}) - ${reason || 'Record edit'}`,
+      { targetId: updatedCase.clientApplicationNumber, newValue: `₹${updatedCase.billingRate}` }
     );
   };
 
   const handleAddCase = (newCase: CaseRecord) => {
     const rawObj: Record<string, any> = {
-      case_id: newCase.caseId,
+      client_application_number: newCase.clientApplicationNumber,
       client_name: newCase.clientDb,
       applicant_name: newCase.applicantName,
       branch_name: newCase.branch,
@@ -256,33 +256,33 @@ function MainBillingApp() {
     if (newCase.billingRate > 0) {
       setOverrides((prev) => ({
         ...prev,
-        [newCase.caseId]: {
+        [newCase.clientApplicationNumber]: {
           rate: newCase.billingRate,
           reason: 'Manual Case Creation',
         },
       }));
     }
 
-    addAuditLog('ADD_CASE', `Added new case record ${newCase.caseId} for ${newCase.applicantName}`, {
-      targetId: newCase.caseId,
+    addAuditLog('ADD_CASE', `Added new case record ${newCase.clientApplicationNumber} for ${newCase.applicantName}`, {
+      targetId: newCase.clientApplicationNumber,
     });
   };
 
-  const handleDeleteCase = (caseId: string) => {
+  const handleDeleteCase = (clientApplicationNumber: string) => {
     setRawCases((prev) =>
       prev.filter((r) => {
-        const idVal = colConfig.colCaseId ? r[colConfig.colCaseId] : null;
-        return String(idVal).trim() !== String(caseId).trim();
+        const idVal = colConfig.colClientApplicationNumber ? r[colConfig.colClientApplicationNumber] : null;
+        return String(idVal).trim() !== String(clientApplicationNumber).trim();
       })
     );
 
     setOverrides((prev) => {
       const next = { ...prev };
-      delete next[caseId];
+      delete next[clientApplicationNumber];
       return next;
     });
 
-    addAuditLog('DELETE_CASE', `Deleted case record ${caseId}`, { targetId: caseId });
+    addAuditLog('DELETE_CASE', `Deleted case record ${clientApplicationNumber}`, { targetId: clientApplicationNumber });
   };
 
   const handleSaveInvoice = (invoice: Invoice) => {

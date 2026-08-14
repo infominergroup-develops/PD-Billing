@@ -25,7 +25,7 @@ interface EditableRecordsTableProps {
   rates: RateRule[];
   onUpdateCase: (updatedCase: CaseRecord, changeReason?: string) => void;
   onAddCase: (newCase: CaseRecord) => void;
-  onDeleteCase: (caseId: string) => void;
+  onDeleteCase: (clientApplicationNumber: string) => void;
   onExportFilteredExcel: (filteredCases: CaseRecord[]) => void;
 }
 
@@ -62,7 +62,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
     // Search
     const q = searchQuery.toLowerCase();
     const matchesSearch =
-      c.caseId.toLowerCase().includes(q) ||
+      c.clientApplicationNumber.toLowerCase().includes(q) ||
       c.applicantName.toLowerCase().includes(q) ||
       c.clientDb.toLowerCase().includes(q) ||
       c.city.toLowerCase().includes(q) ||
@@ -227,7 +227,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
           <table className="w-full text-left text-xs border-collapse" id="editable-records-table">
             <thead className="bg-[#2d3e50] text-white font-bold sticky top-0 z-10">
               <tr>
-                <th className="p-3 whitespace-nowrap">Case ID</th>
+                <th className="p-3 whitespace-nowrap">Client Application Number</th>
                 <th className="p-3 whitespace-nowrap">Client (DB)</th>
                 <th className="p-3 whitespace-nowrap">Applicant Name</th>
                 <th className="p-3 whitespace-nowrap">Branch / City</th>
@@ -264,7 +264,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                       }`}
                     >
                       <td className="p-3 font-mono font-bold text-[#2d3e50] whitespace-nowrap">
-                        {c.caseId}
+                        {c.clientApplicationNumber}
                       </td>
                       <td className="p-3 text-slate-800 font-semibold max-w-[160px] truncate" title={c.clientDb}>
                         {c.clientDb}
@@ -319,8 +319,8 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                           {canEditRecords && (
                             <button
                               onClick={() => {
-                                if (window.confirm(`Delete case ${c.caseId}?`)) {
-                                  onDeleteCase(c.caseId);
+                                if (window.confirm(`Delete case ${c.clientApplicationNumber}?`)) {
+                                  onDeleteCase(c.clientApplicationNumber);
                                 }
                               }}
                               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
@@ -379,7 +379,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                   Edit Case &amp; Billing Rate
                 </h3>
                 <span className="font-mono text-xs text-[#eb8a23] font-bold">
-                  {editingCase.caseId}
+                  {editingCase.clientApplicationNumber}
                 </span>
               </div>
               <button
@@ -556,7 +556,7 @@ interface AddNewCaseModalProps {
 }
 
 const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches, onClose, onAdd }) => {
-  const [caseId, setCaseId] = useState(`CASE-${Date.now().toString().slice(-5)}`);
+  const [clientApplicationNumber, setCaseId] = useState(`CASE-${Date.now().toString().slice(-5)}`);
   const [applicantName, setApplicantName] = useState('');
   const [clientDb, setClientDb] = useState(rates[0]?.client || 'Aditya Birla Capital - PD');
   const [branch, setBranch] = useState('Main Branch');
@@ -573,7 +573,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
     const finalRate = Number(billingRate) || 0;
     const newRecord: CaseRecord = {
       id: `case_${Date.now()}`,
-      caseId,
+      clientApplicationNumber,
       clientAppNo: `APP-${Date.now().toString().slice(-6)}`,
       applicantName: applicantName || 'Manual Entry',
       clientDb,
@@ -611,10 +611,10 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
         <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Case ID *</label>
+              <label className="block font-bold text-slate-700 mb-1">Client Application Number *</label>
               <input
                 type="text"
-                value={caseId}
+                value={clientApplicationNumber}
                 onChange={(e) => setCaseId(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23] font-mono"
                 required

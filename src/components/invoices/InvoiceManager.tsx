@@ -65,7 +65,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
     }
 
     const items: InvoiceItem[] = clientCases.map((c) => ({
-      caseId: c.caseId,
+      clientApplicationNumber: c.clientApplicationNumber,
       applicantName: c.applicantName,
       branch: c.branch,
       city: c.city,
@@ -375,7 +375,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                     <thead className="bg-[#2d3e50] text-white font-bold">
                       <tr>
                         <th className="p-2.5">#</th>
-                        <th className="p-2.5">Case ID</th>
+                        <th className="p-2.5">Client Application Number</th>
                         <th className="p-2.5">Applicant Name</th>
                         <th className="p-2.5">Branch / City</th>
                         <th className="p-2.5 text-center">KM Slab</th>
@@ -387,7 +387,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                       {selectedInvoice.items.map((item, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">
                           <td className="p-2.5 text-slate-400 font-mono">{idx + 1}</td>
-                          <td className="p-2.5 font-mono font-bold text-[#2d3e50]">{item.caseId}</td>
+                          <td className="p-2.5 font-mono font-bold text-[#2d3e50]">{item.clientApplicationNumber}</td>
                           <td className="p-2.5 font-semibold text-slate-800">{item.applicantName}</td>
                           <td className="p-2.5 text-slate-600">{item.branch} ({item.city || '—'})</td>
                           <td className="p-2.5 text-center font-bold text-[#eb8a23]">{item.slab}</td>

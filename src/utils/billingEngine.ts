@@ -19,7 +19,7 @@ export function detectColumnNames(sampleRow: Record<string, any>): ColumnMapping
   });
 
   return {
-    colCaseId: keyMap['caseid'] || keyMap['case_id'] || keyMap['caseno'] || keyMap['id'] || null,
+    colClientApplicationNumber: keyMap['clientapplicationnumber'] || keyMap['client_application_number'] || keyMap['caseno'] || keyMap['id'] || null,
     colClient: keyMap['clientname'] || keyMap['client_name'] || keyMap['client'] || null,
     colKM: keyMap['kmrunningoneside'] || keyMap['km_running_one_side'] || keyMap['kmoneside'] || keyMap['km'] || null,
     colKMFed: keyMap['kmfeededbymis'] || keyMap['km_feeded_by_mis'] || null,
@@ -50,7 +50,7 @@ export function deduplicateRawRows(
   const map = new Map<string, Record<string, any>>();
 
   rows.forEach((r, idx) => {
-    const idVal = cols.colCaseId ? r[cols.colCaseId] : null;
+    const idVal = cols.colClientApplicationNumber ? r[cols.colClientApplicationNumber] : null;
     const key = idVal !== null && idVal !== undefined && String(idVal).trim() !== ''
       ? String(idVal).trim()
       : `row_${idx}`;
@@ -151,8 +151,8 @@ export function processCaseRecords(
   const getCol = (r: Record<string, any>, col: string | null) => (col && r[col] !== undefined ? r[col] : null);
 
   rawCases.forEach((r, idx) => {
-    const rawCaseId = getCol(r, cols.colCaseId);
-    const caseId = rawCaseId !== null && rawCaseId !== undefined && String(rawCaseId).trim() !== ''
+    const rawCaseId = getCol(r, cols.colClientApplicationNumber);
+    const clientApplicationNumber = rawCaseId !== null && rawCaseId !== undefined && String(rawCaseId).trim() !== ''
       ? String(rawCaseId).trim()
       : `CASE-${idx + 1}`;
 
@@ -178,7 +178,7 @@ export function processCaseRecords(
     let isManualOverride = false;
     let overrideReason = '';
 
-    const override = existingOverrides?.get(caseId);
+    const override = existingOverrides?.get(clientApplicationNumber);
 
     if (override) {
       billingRate = override.rate;
@@ -209,8 +209,8 @@ export function processCaseRecords(
     }
 
     const record: CaseRecord = {
-      id: `case_${caseId}_${idx}`,
-      caseId,
+      id: `case_${clientApplicationNumber}_${idx}`,
+      clientApplicationNumber,
       clientAppNo: String(getCol(r, cols.colAppNo) || ''),
       applicantName: String(getCol(r, cols.colApplicant) || 'Unnamed Applicant'),
       clientDb: clientDb || 'Unknown Client',
@@ -363,7 +363,7 @@ function createSheetFromObjects(data: Record<string, any>[]): XLSX.WorkSheet {
 
 export function formatCaseForExport(c: CaseRecord) {
   return {
-    'Case ID': c.caseId,
+    'Client Application Number': c.clientApplicationNumber,
     'Client Application No.': c.clientAppNo,
     'Applicant Name': c.applicantName,
     'Client (DB)': c.clientDb,

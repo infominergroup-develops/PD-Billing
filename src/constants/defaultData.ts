@@ -99,7 +99,6 @@ export const DEMO_USERS = [
 
 export const SAMPLE_CASES_RAW = [
   {
-    case_id: 'MC-2026-001',
     client_name: 'Piramal - PD',
     applicant_name: 'Vikram Singh Mehta',
     client_application_number: 'APP-998812',
@@ -118,7 +117,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Hazratganj Branch',
   },
   {
-    case_id: 'MC-2026-002',
     client_name: 'Piramal - PD',
     applicant_name: 'Sunita Devi & Rajesh',
     client_application_number: 'APP-998813',
@@ -137,7 +135,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Sigra Branch',
   },
   {
-    case_id: 'MC-2026-003',
     client_name: 'SMFG India Credit Company Ltd - PD',
     applicant_name: 'Gurpreet Singh',
     client_application_number: 'SMFG-55102',
@@ -156,7 +153,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Cyber City Branch',
   },
   {
-    case_id: 'MC-2026-004',
     client_name: 'SMFG India Credit Company Ltd - PD',
     applicant_name: 'Kavita Agarwal',
     client_application_number: 'SMFG-55103',
@@ -175,7 +171,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Sector 18 Branch',
   },
   {
-    case_id: 'MC-2026-005',
     client_name: 'Aditya Birla Capital-PD',
     applicant_name: 'Ananya Sharma',
     client_application_number: 'ABC-1092',
@@ -194,7 +189,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Tonk Road Branch',
   },
   {
-    case_id: 'MC-2026-006',
     client_name: 'Aditya Birla Capital-PD',
     applicant_name: 'Manoj Joshi',
     client_application_number: 'ABC-1093',
@@ -213,7 +207,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Gumanpura Branch',
   },
   {
-    case_id: 'MC-2026-007',
     client_name: 'IDFC First Bank Ltd',
     applicant_name: 'Rohan Deshmukh',
     client_application_number: 'IDFC-88710',
@@ -232,7 +225,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Andheri East Branch',
   },
   {
-    case_id: 'MC-2026-008',
     client_name: 'Shivalik Small Finance Bank Ltd.  - PD',
     applicant_name: 'Dinesh Chandra',
     client_application_number: 'SSFB-3301',
@@ -251,7 +243,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Court Road Branch',
   },
   {
-    case_id: 'MC-2026-009',
     client_name: 'Shivalik Small Finance Bank Ltd.  - PD',
     applicant_name: 'Nitin Mittal',
     client_application_number: 'SSFB-3302',
@@ -270,7 +261,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Rajpur Road Branch',
   },
   {
-    case_id: 'MC-2026-010',
     client_name: 'Auxilo Finserve Pvt Ltd',
     applicant_name: 'Shruti Venkat',
     client_application_number: 'AUX-7721',
@@ -289,7 +279,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Koramangala Branch',
   },
   {
-    case_id: 'MC-2026-011',
     client_name: 'Auxilo Finserve Pvt Ltd',
     applicant_name: 'Tanya Banerjee',
     client_application_number: 'AUX-7722',
@@ -308,7 +297,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Salt Lake Branch',
   },
   {
-    case_id: 'MC-2026-012',
     client_name: 'Kotak Mahindra Bank Ltd - PD',
     applicant_name: 'Harsh Vardhan',
     client_application_number: 'KMBL-9014',
@@ -327,7 +315,6 @@ export const SAMPLE_CASES_RAW = [
     branch_name: 'Connaught Place Branch',
   },
   {
-    case_id: 'MC-2026-013',
     client_name: 'Jana Small Finance Bank Ltd-PD',
     applicant_name: 'Manish Tiwari',
     client_application_number: 'JSFB-6601',

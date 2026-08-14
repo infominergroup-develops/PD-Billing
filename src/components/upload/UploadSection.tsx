@@ -136,7 +136,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               <h1 className="text-xl font-black text-[#2d3e50]">Upload Case Data (MC Report)</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              Upload your activity-level MC Report Excel workbook (.xlsx/.xls). The engine will automatically deduplicate cases by Case ID, prioritize verified KM values, and prepare billing calculations.
+              Upload your activity-level MC Report Excel workbook (.xlsx/.xls). The engine will automatically deduplicate cases by Client Application Number, prioritize verified KM values, and prepare billing calculations.
             </p>
           </div>
 
@@ -264,7 +264,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#2d3e50] text-white font-bold sticky top-0">
                 <tr>
-                  <th className="p-2.5 whitespace-nowrap">Case ID</th>
+                  <th className="p-2.5 whitespace-nowrap">Client Application Number</th>
                   <th className="p-2.5 whitespace-nowrap">Client Name</th>
                   <th className="p-2.5 whitespace-nowrap">Applicant</th>
                   <th className="p-2.5 whitespace-nowrap">City</th>
@@ -277,7 +277,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               <tbody className="divide-y divide-slate-100 font-medium">
                 {samplePreviewCases.slice(0, 10).map((c, i) => (
                   <tr key={c.id || i} className="hover:bg-slate-50/80">
-                    <td className="p-2.5 font-mono text-[#2d3e50] font-bold">{c.caseId}</td>
+                    <td className="p-2.5 font-mono text-[#2d3e50] font-bold">{c.clientApplicationNumber}</td>
                     <td className="p-2.5 text-slate-800">{c.clientDb}</td>
                     <td className="p-2.5 text-slate-700">{c.applicantName}</td>
                     <td className="p-2.5 text-slate-600">{c.city || '—'}</td>

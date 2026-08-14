@@ -44,7 +44,7 @@ export const DocumentationView: React.FC = () => {
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <h3 className="font-bold text-[#2d3e50] text-sm mb-2">A. Deduplication &amp; Priority KM Resolution</h3>
               <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                <li><strong>Deduplication Key:</strong> <code>Case ID</code> (combining activity sub-rows).</li>
+                <li><strong>Deduplication Key:</strong> <code>Client Application Number</code> (combining activity sub-rows).</li>
                 <li>
                   <strong>KM Resolution Hierarchy:</strong>
                   <ol className="list-decimal pl-4 mt-1 font-mono text-[11px] text-[#eb8a23]">

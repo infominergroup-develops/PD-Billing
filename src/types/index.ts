@@ -13,7 +13,7 @@ export interface RateRule {
 
 export interface CaseRecord {
   id: string;
-  caseId: string;
+  clientApplicationNumber: string;
   clientAppNo: string;
   applicantName: string;
   clientDb: string;
@@ -50,7 +50,7 @@ export interface CaseRecord {
 }
 
 export interface ColumnMappingConfig {
-  colCaseId: string | null;
+  colClientApplicationNumber: string | null;
   colClient: string | null;
   colKM: string | null;
   colKMFed: string | null;
@@ -114,7 +114,7 @@ export interface AuditLog {
 }
 
 export interface InvoiceItem {
-  caseId: string;
+  clientApplicationNumber: string;
   applicantName: string;
   branch: string;
   city: string;
