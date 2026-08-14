@@ -105,7 +105,15 @@ app.post('/api/logs', async (req, res) => {
   }
 });
 
+const path = require('path');
+
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Serve frontend build in production
+app.use(express.static(path.join(__dirname, 'dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
