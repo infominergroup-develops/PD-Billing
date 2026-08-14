@@ -1,0 +1,6 @@
+{
+  "name": "Infominer PD Billing & Audit Platform",
+  "description": "Enterprise Personal Discussion (PD) verification billing automation platform with real-time analytics, client-wise invoice generation, editable case records, master rate sheet engine, and audit logging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
