@@ -1,6 +1,14 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -9,7 +17,6 @@ app.use(express.json({ limit: '50mb' }));
 const PORT = 3001;
 
 // MongoDB URIs
-require('dotenv').config();
 const BASE_URI = process.env.MONGODB_URI || 'mongodb+srv://infominergroupdev_db_user:ah9lwaTpGOM3mKja@cluster0.ea2qhi2.mongodb.net';
 const USERS_DB_URI = `${BASE_URI}/InfominerGroup_db?appName=Cluster0`;
 const BILLING_DB_URI = `${BASE_URI}/BILLING?appName=Cluster0`;
@@ -105,8 +112,6 @@ app.post('/api/logs', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-const path = require('path');
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
