@@ -19,7 +19,7 @@ export function detectColumnNames(sampleRow: Record<string, any>): ColumnMapping
   });
 
   return {
-    colClientApplicationNumber: keyMap['clientapplicationnumber'] || keyMap['client_application_number'] || keyMap['caseno'] || keyMap['id'] || null,
+    colClientApplicationNumber: keyMap['clientapplicationnumber'] || keyMap['applicationnumber'] || keyMap['appno'] || keyMap['caseid'] || keyMap['caseno'] || keyMap['id'] || null,
     colClient: keyMap['clientname'] || keyMap['client_name'] || keyMap['client'] || null,
     colKM: keyMap['kmrunningoneside'] || keyMap['km_running_one_side'] || keyMap['kmoneside'] || keyMap['km'] || null,
     colKMFed: keyMap['kmfeededbymis'] || keyMap['km_feeded_by_mis'] || null,
