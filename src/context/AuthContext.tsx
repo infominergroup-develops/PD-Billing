@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isManager,
         isAuditor,
         canEditRecords: isAdmin,
-        canEditRates: isAdmin,
+        canEditRates: isManager,
         canGenerateInvoices: isAdmin,
       }}
     >
