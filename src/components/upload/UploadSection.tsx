@@ -72,7 +72,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           return;
         }
 
-        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: null, raw: false });
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: null, raw: false, blankrows: true });
 
         if (!rows.length) {
           setErrorMessage('The uploaded file is empty (0 rows found).');
