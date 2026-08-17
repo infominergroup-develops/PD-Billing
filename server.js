@@ -18,12 +18,10 @@ const PORT = 3001;
 
 // MongoDB URIs
 const BASE_URI = process.env.MONGODB_URI || 'mongodb+srv://infominergroupdev_db_user:ah9lwaTpGOM3mKja@cluster0.ea2qhi2.mongodb.net';
-const USERS_DB_URI = `${BASE_URI}/InfominerGroup_db?appName=Cluster0`;
-const BILLING_DB_URI = `${BASE_URI}/Billing?appName=Cluster0`;
 
-// Connections
-const usersConnection = mongoose.createConnection(USERS_DB_URI);
-const billingConnection = mongoose.createConnection(BILLING_DB_URI);
+// Connections - using dbName instead of string concatenation to avoid Vercel ENV malformation
+const usersConnection = mongoose.createConnection(BASE_URI, { dbName: 'InfominerGroup_db' });
+const billingConnection = mongoose.createConnection(BASE_URI, { dbName: 'Billing' });
 
 usersConnection.on('connected', () => console.log('Connected to infominerGroup_db'));
 billingConnection.on('connected', () => console.log('Connected to BILLING db'));
