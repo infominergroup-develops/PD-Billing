@@ -58,30 +58,36 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
   const uniqueStates = Array.from(new Set(cases.map((c) => c.state).filter(Boolean))).sort();
   const uniqueBranches = Array.from(new Set(cases.map((c) => c.branch).filter(Boolean))).sort();
 
-  const filtered = cases.filter((c) => {
+  const baseFilteredForStatus = cases.filter((c) => {
     // Search
     const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      c.clientApplicationNumber.toLowerCase().includes(q) ||
-      c.applicantName.toLowerCase().includes(q) ||
-      c.clientDb.toLowerCase().includes(q) ||
-      c.city.toLowerCase().includes(q) ||
-      c.state.toLowerCase().includes(q) ||
-      c.clientAppNo.toLowerCase().includes(q);
+    if (q) {
+      const matchesSearch =
+        c.clientApplicationNumber.toLowerCase().includes(q) ||
+        c.applicantName.toLowerCase().includes(q) ||
+        c.clientDb.toLowerCase().includes(q) ||
+        c.city.toLowerCase().includes(q) ||
+        c.state.toLowerCase().includes(q) ||
+        c.clientAppNo.toLowerCase().includes(q);
 
-    if (!matchesSearch) return false;
-
-    // Status Filter
-    if (statusFilter === 'billable' && !c.isBillable) return false;
-    if (statusFilter === 'exceptions' && !c.isException) return false;
-    if (statusFilter === 'cancelled' && !c.isCancelled) return false;
-    if (statusFilter === 'overrides' && !c.isManualOverride) return false;
+      if (!matchesSearch) return false;
+    }
 
     // Client Filter
     if (clientFilter !== 'all' && c.clientDb !== clientFilter) return false;
 
     // State Filter
     if (stateFilter !== 'all' && c.state !== stateFilter) return false;
+
+    return true;
+  });
+
+  const filtered = baseFilteredForStatus.filter((c) => {
+    // Status Filter
+    if (statusFilter === 'billable' && !c.isBillable) return false;
+    if (statusFilter === 'exceptions' && !c.isException) return false;
+    if (statusFilter === 'cancelled' && !c.isCancelled) return false;
+    if (statusFilter === 'overrides' && !c.isManualOverride) return false;
 
     return true;
   });
@@ -173,11 +179,11 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
               }}
               className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-[#eb8a23]"
             >
-              <option value="all">All Statuses ({cases.length})</option>
-              <option value="billable">Billable Only ({cases.filter((c) => c.isBillable).length})</option>
-              <option value="exceptions">Exceptions Only ({cases.filter((c) => c.isException).length})</option>
-              <option value="cancelled">Cancelled Only ({cases.filter((c) => c.isCancelled).length})</option>
-              <option value="overrides">Manual Overrides ({cases.filter((c) => c.isManualOverride).length})</option>
+              <option value="all">All Statuses ({baseFilteredForStatus.length})</option>
+              <option value="billable">Billable Only ({baseFilteredForStatus.filter((c) => c.isBillable).length})</option>
+              <option value="exceptions">Exceptions Only ({baseFilteredForStatus.filter((c) => c.isException).length})</option>
+              <option value="cancelled">Cancelled Only ({baseFilteredForStatus.filter((c) => c.isCancelled).length})</option>
+              <option value="overrides">Manual Overrides ({baseFilteredForStatus.filter((c) => c.isManualOverride).length})</option>
             </select>
           </div>
 
