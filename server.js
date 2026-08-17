@@ -19,15 +19,18 @@ const PORT = 3001;
 // MongoDB URIs
 const BASE_URI = process.env.MONGODB_URI || 'mongodb+srv://infominergroupdev_db_user:ah9lwaTpGOM3mKja@cluster0.ea2qhi2.mongodb.net';
 
-// Connections - using dbName instead of string concatenation to avoid Vercel ENV malformation
-const usersConnection = mongoose.createConnection(BASE_URI, { dbName: 'InfominerGroup_db' });
-const billingConnection = mongoose.createConnection(BASE_URI, { dbName: 'Billing' });
+// Connections - explicitly await to prevent Vercel background connection drops
+const mongooseOpts = { serverSelectionTimeoutMS: 5000 };
+const usersConnection = mongoose.createConnection(BASE_URI, { ...mongooseOpts, dbName: 'InfominerGroup_db' });
+const billingConnection = mongoose.createConnection(BASE_URI, { ...mongooseOpts, dbName: 'Billing' });
 
-usersConnection.on('connected', () => console.log('Connected to infominerGroup_db'));
-billingConnection.on('connected', () => console.log('Connected to BILLING db'));
-
-usersConnection.on('error', (err) => console.error('Error connecting to users db:', err));
-billingConnection.on('error', (err) => console.error('Error connecting to billing db:', err));
+// In serverless environments, background connections can be paused. We explicitly await them.
+try {
+  await Promise.all([usersConnection.asPromise(), billingConnection.asPromise()]);
+  console.log('Successfully connected to MongoDB databases.');
+} catch (err) {
+  console.error('CRITICAL: Failed to connect to MongoDB. Check IP Whitelist (0.0.0.0/0) or URI credentials.', err);
+}
 
 // Schemas
 // Note: Schemas are generic/loose because we are interacting with an existing db for users
