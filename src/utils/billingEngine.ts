@@ -237,7 +237,7 @@ export function processCaseRecords(
 
   // Group by client
   const clientAgg: Record<string, { cases: number; amount: number }> = {};
-  billable.forEach((c) => {
+  allCases.forEach((c) => {
     const k = c.clientDb || 'Unknown';
     if (!clientAgg[k]) clientAgg[k] = { cases: 0, amount: 0 };
     clientAgg[k].cases += 1;
@@ -249,7 +249,7 @@ export function processCaseRecords(
 
   // Group by state
   const stateAgg: Record<string, { count: number; amount: number }> = {};
-  billable.forEach((c) => {
+  allCases.forEach((c) => {
     const k = c.state || 'Unassigned';
     if (!stateAgg[k]) stateAgg[k] = { count: 0, amount: 0 };
     stateAgg[k].count += 1;
@@ -261,7 +261,7 @@ export function processCaseRecords(
 
   // Group by product
   const prodAgg: Record<string, { count: number; amount: number }> = {};
-  billable.forEach((c) => {
+  allCases.forEach((c) => {
     const k = c.product || 'Other';
     if (!prodAgg[k]) prodAgg[k] = { count: 0, amount: 0 };
     prodAgg[k].count += 1;
@@ -273,7 +273,7 @@ export function processCaseRecords(
 
   // Group by slab
   const slabAgg: Record<string, { count: number; amount: number }> = {};
-  billable.forEach((c) => {
+  allCases.forEach((c) => {
     const k = c.slabApplied || 'Standard';
     if (!slabAgg[k]) slabAgg[k] = { count: 0, amount: 0 };
     slabAgg[k].count += 1;
