@@ -136,7 +136,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               <h1 className="text-xl font-black text-[#2d3e50]">Upload Case Data (MC Report)</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              Upload your activity-level MC Report Excel workbook (.xlsx/.xls). The engine will automatically deduplicate cases by Client Application Number, prioritize verified KM values, and prepare billing calculations.
+              Upload your activity-level MC Report Excel workbook (.xlsx/.xls). The engine will automatically prepare billing calculations and map your cases based on KM values and Client data.
             </p>
           </div>
 

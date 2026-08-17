@@ -47,32 +47,9 @@ export function deduplicateRawRows(
   rows: Record<string, any>[],
   cols: ColumnMappingConfig
 ): Record<string, any>[] {
-  const map = new Map<string, Record<string, any>>();
-
-  rows.forEach((r, idx) => {
-    const idVal = cols.colClientApplicationNumber ? r[cols.colClientApplicationNumber] : null;
-    const key = idVal !== null && idVal !== undefined && String(idVal).trim() !== ''
-      ? String(idVal).trim()
-      : `row_${idx}`;
-
-    if (!map.has(key)) {
-      map.set(key, { ...r, _rawRowIdx: idx });
-    } else {
-      const ex = map.get(key)!;
-      // Prefer non-null values for KM fields
-      if (cols.colKMUsed && (ex[cols.colKMUsed] === null || ex[cols.colKMUsed] === '' || ex[cols.colKMUsed] === undefined) && r[cols.colKMUsed]) {
-        ex[cols.colKMUsed] = r[cols.colKMUsed];
-      }
-      if (cols.colKMFed && (ex[cols.colKMFed] === null || ex[cols.colKMFed] === '' || ex[cols.colKMFed] === undefined) && r[cols.colKMFed]) {
-        ex[cols.colKMFed] = r[cols.colKMFed];
-      }
-      if (cols.colKM && (ex[cols.colKM] === null || ex[cols.colKM] === '' || ex[cols.colKM] === undefined) && r[cols.colKM]) {
-        ex[cols.colKM] = r[cols.colKM];
-      }
-    }
-  });
-
-  return Array.from(map.values());
+  // To ensure all rows from Excel are accurately read without dropping any
+  // cases (even if Client Application Number is repeated), we skip deduplication
+  return rows.map((r, idx) => ({ ...r, _rawRowIdx: idx }));
 }
 
 export function lookupRate(
