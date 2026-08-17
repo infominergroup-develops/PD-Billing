@@ -19,7 +19,7 @@ const PORT = 3001;
 // MongoDB URIs
 const BASE_URI = process.env.MONGODB_URI || 'mongodb+srv://infominergroupdev_db_user:ah9lwaTpGOM3mKja@cluster0.ea2qhi2.mongodb.net';
 const USERS_DB_URI = `${BASE_URI}/InfominerGroup_db?appName=Cluster0`;
-const BILLING_DB_URI = `${BASE_URI}/BILLING?appName=Cluster0`;
+const BILLING_DB_URI = `${BASE_URI}/Billing?appName=Cluster0`;
 
 // Connections
 const usersConnection = mongoose.createConnection(USERS_DB_URI);
