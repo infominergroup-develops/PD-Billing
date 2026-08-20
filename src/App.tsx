@@ -376,7 +376,7 @@ function MainBillingApp() {
           />
         )}
 
-        {activeTab === 'invoices' && (
+        {/* activeTab === 'invoices' && (
           <InvoiceManager
             cases={allCases}
             invoices={invoices}
@@ -385,7 +385,7 @@ function MainBillingApp() {
             onDeleteInvoice={handleDeleteInvoice}
             onUpdateCompanyProfile={setCompanyProfile}
           />
-        )}
+        ) */}
 
         {activeTab === 'reports' && (
           <DownloadCenter

@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'records', label: '3. Case Records', icon: FileSpreadsheet, badge: exceptionCount > 0 ? `${exceptionCount} exp` : undefined, badgeColor: 'bg-amber-500 text-white' },
     { id: 'mapping', label: '4. Client Mapping', icon: GitFork },
     { id: 'rates', label: '5. Rate Sheet', icon: TableProperties },
-    { id: 'invoices', label: '6. Tax Invoices', icon: Receipt },
+    // { id: 'invoices', label: '6. Tax Invoices', icon: Receipt },
     { id: 'reports', label: '7. Export Reports', icon: Download },
     { id: 'audit', label: '8. Audit Trail', icon: History },
     { id: 'docs', label: 'Help & Docs', icon: BookOpen },

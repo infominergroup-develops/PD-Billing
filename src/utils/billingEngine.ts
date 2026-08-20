@@ -40,6 +40,7 @@ export function detectColumnNames(sampleRow: Record<string, any>): ColumnMapping
     colLoanAmt: keyMap['appliedloanamt'] || keyMap['applied_loan_amt'] || keyMap['loanamount'] || null,
     colBranch: keyMap['branchname'] || keyMap['branch_name'] || keyMap['branch'] || null,
     colActivityNm: keyMap['activityname'] || keyMap['activity_name'] || null,
+    colDeletionDate: keyMap['deletiondate'] || keyMap['deletion_date'] || null,
   };
 }
 
@@ -127,7 +128,8 @@ export function processCaseRecords(
 
   const getCol = (r: Record<string, any>, col: string | null) => (col && r[col] !== undefined ? r[col] : null);
 
-  rawCases.forEach((r, idx) => {
+  // 1. Map all cases first
+  const initialCases = rawCases.map((r, idx) => {
     const rawCaseId = getCol(r, cols.colClientApplicationNumber);
     const clientApplicationNumber = rawCaseId !== null && rawCaseId !== undefined && String(rawCaseId).trim() !== ''
       ? String(rawCaseId).trim()
@@ -218,13 +220,27 @@ export function processCaseRecords(
       isBillable,
       isException,
       isCancelled,
+      deletionDate: String(getCol(r, cols.colDeletionDate) || ''),
       _rawRow: r,
     };
 
+    return record;
+  });
+
+  // 2. Filter and sort
+  let filteredCases = initialCases;
+
+  if (cols.colDeletionDate) {
+    // Keep active cases (where deletion date is EMPTY)
+    filteredCases = initialCases.filter(c => !c.deletionDate || c.deletionDate.trim() === '');
+  }
+
+  // 3. Populate final arrays (No deduplication as requested)
+  filteredCases.forEach(record => {
     allCases.push(record);
-    if (isCancelled) {
+    if (record.isCancelled) {
       cancelled.push(record);
-    } else if (isBillable) {
+    } else if (record.isBillable) {
       billable.push(record);
     } else {
       exceptions.push(record);
@@ -581,4 +597,92 @@ export function exportSingleClientReport(
   }
 
   XLSX.writeFile(wb, `${sanitizeSheetName(clientName)}_${groupBy.toUpperCase()}_Billing_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+export function exportBankMISReport(
+  allCases: CaseRecord[],
+  fileNamePrefix: string = 'Bank_MIS_Report'
+) {
+  const wb = XLSX.utils.book_new();
+
+  // Group by City first, then by Client
+  const cityClientGroups: Record<string, Record<string, CaseRecord[]>> = {};
+
+  allCases.forEach(c => {
+    const city = c.city || 'Unknown City';
+    const client = c.clientDb || 'Unknown Client';
+
+    if (!cityClientGroups[city]) {
+      cityClientGroups[city] = {};
+    }
+    if (!cityClientGroups[city][client]) {
+      cityClientGroups[city][client] = [];
+    }
+    cityClientGroups[city][client].push(c);
+  });
+
+  // Create a structured data array for the sheet
+  const exportData: any[] = [];
+
+  Object.keys(cityClientGroups).sort().forEach(city => {
+    // Add City Header Row (Bold representation by convention)
+    exportData.push({
+      'City': `CITY: ${city.toUpperCase()}`,
+      'Client': '',
+      'App No': '',
+      'Applicant': '',
+      'Product': '',
+      'Status': '',
+      'Amount': '',
+      'Deletion Date': ''
+    });
+
+    Object.keys(cityClientGroups[city]).sort().forEach(client => {
+      // Add Client Header Row
+      exportData.push({
+        'City': '',
+        'Client': `CLIENT: ${client.toUpperCase()}`,
+        'App No': '',
+        'Applicant': '',
+        'Product': '',
+        'Status': '',
+        'Amount': '',
+        'Deletion Date': ''
+      });
+
+      // Add Data Rows
+      cityClientGroups[city][client].forEach(c => {
+        exportData.push({
+          'City': '',
+          'Client': '',
+          'App No': c.clientApplicationNumber,
+          'Applicant': c.applicantName,
+          'Product': c.product,
+          'Status': c.caseStatus,
+          'Amount': c.billingAmt,
+          'Deletion Date': c.deletionDate || ''
+        });
+      });
+
+      // Add a blank row after each client
+      exportData.push({});
+    });
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 20 }, // City
+    { wch: 25 }, // Client
+    { wch: 20 }, // App No
+    { wch: 30 }, // Applicant
+    { wch: 20 }, // Product
+    { wch: 15 }, // Status
+    { wch: 15 }, // Amount
+    { wch: 20 }  // Deletion Date
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Bank MIS');
+  XLSX.writeFile(wb, `${fileNamePrefix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }

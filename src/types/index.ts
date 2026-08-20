@@ -44,6 +44,7 @@ export interface CaseRecord {
   isBillable: boolean;
   isException: boolean;
   isCancelled: boolean;
+  deletionDate?: string;
   updatedAt?: string;
   updatedBy?: string;
   _rawRow?: Record<string, any>;
@@ -71,6 +72,7 @@ export interface ColumnMappingConfig {
   colLoanAmt: string | null;
   colBranch: string | null;
   colActivityNm: string | null;
+  colDeletionDate: string | null;
 }
 
 export type UserRole = 'admin' | 'manager' | 'auditor';

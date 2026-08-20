@@ -14,6 +14,7 @@ import {
 import {
   exportBillingReport,
   exportSingleClientReport,
+  exportBankMISReport,
 } from '../../utils/billingEngine';
 
 interface DownloadCenterProps {
@@ -60,6 +61,11 @@ export const DownloadCenter: React.FC<DownloadCenterProps> = ({
     onAuditExport(`Bulk Export: ${type.toUpperCase()}_REPORT`);
   };
 
+  const handleBankMISExport = () => {
+    exportBankMISReport(cases, 'Infominer_Bank_MIS');
+    onAuditExport('Bulk Export: BANK_MIS_REPORT');
+  };
+
   const handleClientExport = (
     clientName: string,
     clientCases: CaseRecord[],
@@ -84,7 +90,20 @@ export const DownloadCenter: React.FC<DownloadCenterProps> = ({
         </p>
 
         {/* Global Download Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mt-6">
+          {/* Bank MIS */}
+          <div
+            onClick={handleBankMISExport}
+            className="p-5 rounded-2xl border border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50 hover:shadow-md transition cursor-pointer text-center group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center mx-auto mb-3 transition">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-xs text-[#2d3e50]">Bank Presentable MIS</h3>
+            <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+              Grouped by City &amp; Client format
+            </p>
+          </div>
           {/* Client-wise */}
           <div
             onClick={() => handleGlobalExport('client')}
