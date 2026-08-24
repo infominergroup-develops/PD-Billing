@@ -55,6 +55,9 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
       id: newId,
       client: 'New Financial Institution',
       state: '',
+      branch: '',
+      city: '',
+      product: '',
       flat: null,
       s1k: null,
       s1r: null,
@@ -76,6 +79,9 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
     const data = rates.map((r) => ({
       'Client Name': r.client,
       State: r.state || 'All',
+      Branch: r.branch || 'All',
+      City: r.city || 'All',
+      Product: r.product || 'All',
       'Flat Rate (₹)': r.flat ?? '',
       'Slab 1 Max KM': r.s1k ?? '',
       'Slab 1 Rate (₹)': r.s1r ?? '',
@@ -110,6 +116,9 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
           id: idx + 1,
           client: String(r['Client Name'] || r['client'] || '').trim(),
           state: r['State'] === 'All' ? '' : String(r['State'] || r['state'] || '').trim(),
+          branch: r['Branch'] === 'All' ? '' : String(r['Branch'] || r['branch'] || '').trim(),
+          city: r['City'] === 'All' ? '' : String(r['City'] || r['city'] || '').trim(),
+          product: r['Product'] === 'All' ? '' : String(r['Product'] || r['product'] || '').trim(),
           flat: r['Flat Rate (₹)'] !== null && r['Flat Rate (₹)'] !== '' ? Number(r['Flat Rate (₹)']) : null,
           s1k: r['Slab 1 Max KM'] !== null && r['Slab 1 Max KM'] !== '' ? Number(r['Slab 1 Max KM']) : null,
           s1r: r['Slab 1 Rate (₹)'] !== null && r['Slab 1 Rate (₹)'] !== '' ? Number(r['Slab 1 Rate (₹)']) : null,
@@ -136,7 +145,10 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
     .filter(
       (r) =>
         r.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.state.toLowerCase().includes(searchQuery.toLowerCase())
+        (r.state && r.state.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (r.branch && r.branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (r.city && r.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (r.product && r.product.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
   return (
@@ -241,7 +253,10 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
               <tr>
                 <th className="p-3 w-10 text-center">#</th>
                 <th className="p-3 min-w-[200px]">Client / Institution Name *</th>
-                <th className="p-3 min-w-[130px]">State <span className="font-normal opacity-70">(optional)</span></th>
+                <th className="p-3 min-w-[100px]">Branch</th>
+                <th className="p-3 min-w-[100px]">City</th>
+                <th className="p-3 min-w-[100px]">Product</th>
+                <th className="p-3 min-w-[100px]">State</th>
                 <th className="p-3 w-28 text-center bg-blue-900/40">Flat Rate ₹</th>
                 <th className="p-3 w-28 text-center">Slab 1 Max KM</th>
                 <th className="p-3 w-28 text-center">Slab 1 Rate ₹</th>
@@ -272,7 +287,37 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                     <td className="p-2">
                       <input
                         type="text"
-                        value={r.state}
+                        value={r.branch || ''}
+                        disabled={!canEditRates}
+                        placeholder="All Branches"
+                        onChange={(e) => handleCellChange(i, 'branch', e.target.value)}
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={r.city || ''}
+                        disabled={!canEditRates}
+                        placeholder="All Cities"
+                        onChange={(e) => handleCellChange(i, 'city', e.target.value)}
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={r.product || ''}
+                        disabled={!canEditRates}
+                        placeholder="All Products"
+                        onChange={(e) => handleCellChange(i, 'product', e.target.value)}
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={r.state || ''}
                         disabled={!canEditRates}
                         placeholder="All States"
                         onChange={(e) => handleCellChange(i, 'state', e.target.value)}

@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   ChevronDown,
   Sparkles,
+  Mail,
+  Scale,
 } from 'lucide-react';
 import { UserRole } from '../../types';
 
@@ -26,6 +28,8 @@ export type ActiveTab =
   | 'records'
   | 'analytics'
   | 'invoices'
+  | 'reconciliation'
+  | 'emails'
   | 'reports'
   | 'audit'
   | 'docs';
@@ -58,9 +62,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'records', label: '3. Case Records', icon: FileSpreadsheet, badge: exceptionCount > 0 ? `${exceptionCount} exp` : undefined, badgeColor: 'bg-amber-500 text-white' },
     { id: 'mapping', label: '4. Client Mapping', icon: GitFork },
     { id: 'rates', label: '5. Rate Sheet', icon: TableProperties },
-    // { id: 'invoices', label: '6. Tax Invoices', icon: Receipt },
-    { id: 'reports', label: '7. Export Reports', icon: Download },
-    { id: 'audit', label: '8. Audit Trail', icon: History },
+    { id: 'reconciliation', label: '6. Settlements', icon: Scale },
+    { id: 'emails', label: '7. Draft Emails', icon: Mail },
+    { id: 'reports', label: '8. Export Reports', icon: Download },
+    { id: 'audit', label: '9. Audit Trail', icon: History },
     { id: 'docs', label: 'Help & Docs', icon: BookOpen },
   ];
 

@@ -56,6 +56,9 @@ export function deduplicateRawRows(
 export function lookupRate(
   masterClient: string,
   state: string,
+  branch: string,
+  city: string,
+  product: string,
   kmVal: any,
   rates: RateRule[]
 ): { rate: number | null; flag: string; slab: string } {
@@ -68,14 +71,30 @@ export function lookupRate(
     return { rate: null, flag: 'Client not in rate sheet', slab: '' };
   }
 
-  // State-specific match first, then blank-state fallback
+  // Hierarchical Match: Branch > City > Product > State > Fallback
   let row: RateRule | undefined;
-  if (state && state.trim()) {
+
+  // 1. Branch
+  if (!row && branch && branch.trim()) {
+    row = cRates.find((r) => r.branch && norm(branch).includes(norm(r.branch)));
+  }
+  // 2. City
+  if (!row && city && city.trim()) {
+    row = cRates.find((r) => r.city && norm(city).includes(norm(r.city)));
+  }
+  // 3. Product
+  if (!row && product && product.trim()) {
+    row = cRates.find((r) => r.product && norm(product).includes(norm(r.product)));
+  }
+  // 4. State
+  if (!row && state && state.trim()) {
     row = cRates.find((r) => r.state && norm(state).includes(norm(r.state)));
   }
+  // 5. Fallback (no specific rules set)
   if (!row) {
-    row = cRates.find((r) => !r.state || !r.state.trim());
+    row = cRates.find((r) => (!r.state || !r.state.trim()) && !r.branch && !r.city && !r.product);
   }
+  // 6. Last resort
   if (!row) {
     row = cRates[0];
   }
@@ -138,6 +157,9 @@ export function processCaseRecords(
     const clientDb = String(getCol(r, cols.colClient) || '').trim();
     const rateSheetClient = clientMap[clientDb] || '';
     const state = String(getCol(r, cols.colState) || '').trim();
+    const branch = String(getCol(r, cols.colBranch) || '').trim();
+    const city = String(getCol(r, cols.colCity) || '').trim();
+    const product = String(getCol(r, cols.colProduct) || '').trim();
     const status = String(getCol(r, cols.colStatus) || '').trim();
 
     // Priority KM calculation: KM Used for Billing -> KM feeded by MIS -> KM_Running_One_Side
@@ -156,6 +178,7 @@ export function processCaseRecords(
     let isCancelled = false;
     let isManualOverride = false;
     let overrideReason = '';
+    let isLeftover = !!r._isLeftover;
 
     const override = existingOverrides?.get(clientApplicationNumber);
 
@@ -173,7 +196,7 @@ export function processCaseRecords(
       remarks = 'Cancelled – Not Billed';
       isCancelled = true;
     } else {
-      const lookup = lookupRate(rateSheetClient, state, kmFinal, rates);
+      const lookup = lookupRate(rateSheetClient, state, branch, city, product, kmFinal, rates);
       if (lookup.rate !== null && lookup.rate > 0) {
         billingRate = lookup.rate;
         slabApplied = lookup.slab;
@@ -220,6 +243,7 @@ export function processCaseRecords(
       isBillable,
       isException,
       isCancelled,
+      isLeftover,
       deletionDate: String(getCol(r, cols.colDeletionDate) || ''),
       _rawRow: r,
     };
@@ -304,6 +328,7 @@ export function processCaseRecords(
     Billable: billable.length,
     Exceptions: exceptions.length,
     Cancelled: cancelled.length,
+    Leftovers: allCases.filter(c => c.isLeftover).length,
   };
   const statusBreakdown = Object.entries(statusAgg).map(([status, count]) => ({ status, count }));
 
@@ -315,6 +340,7 @@ export function processCaseRecords(
     totalBillingAmt,
     exceptionCases: exceptions.length,
     cancelledCases: cancelled.length,
+    leftoverCases: allCases.filter(c => c.isLeftover).length,
     uniqueClients,
     avgBillingPerCase,
     topClients,

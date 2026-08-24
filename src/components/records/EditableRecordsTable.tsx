@@ -41,7 +41,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'billable' | 'exceptions' | 'cancelled' | 'overrides'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'billable' | 'exceptions' | 'cancelled' | 'overrides' | 'leftovers'>('all');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
 
@@ -88,6 +88,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
     if (statusFilter === 'exceptions' && !c.isException) return false;
     if (statusFilter === 'cancelled' && !c.isCancelled) return false;
     if (statusFilter === 'overrides' && !c.isManualOverride) return false;
+    if (statusFilter === 'leftovers' && !c.isLeftover) return false;
 
     return true;
   });
@@ -184,6 +185,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
               <option value="exceptions">Exceptions Only ({baseFilteredForStatus.filter((c) => c.isException).length})</option>
               <option value="cancelled">Cancelled Only ({baseFilteredForStatus.filter((c) => c.isCancelled).length})</option>
               <option value="overrides">Manual Overrides ({baseFilteredForStatus.filter((c) => c.isManualOverride).length})</option>
+              <option value="leftovers">Month-End Leftovers ({baseFilteredForStatus.filter((c) => c.isLeftover).length})</option>
             </select>
           </div>
 
@@ -296,6 +298,10 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                         {c.isCancelled ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
                             <XCircle className="w-3 h-3" /> Cancelled
+                          </span>
+                        ) : c.isLeftover ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                            <Info className="w-3 h-3" /> Leftover
                           </span>
                         ) : c.isBillable ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
@@ -470,6 +476,19 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                     placeholder="Enter KM"
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23] font-bold text-[#eb8a23]"
                   />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!editingCase.isLeftover}
+                      onChange={(e) => setEditingCase({ ...editingCase, isLeftover: e.target.checked })}
+                      className="w-4 h-4 text-[#eb8a23] rounded focus:ring-[#eb8a23]"
+                    />
+                    Mark as Month-End Leftover
+                  </label>
+                  <p className="text-[10px] text-slate-500 ml-6 mt-0.5">Leftover cases are highlighted on the live dashboard.</p>
                 </div>
               </div>
 

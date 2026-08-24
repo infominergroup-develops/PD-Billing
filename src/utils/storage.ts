@@ -1,4 +1,4 @@
-import { RateRule, AuditLog, Invoice, CompanyProfile, ColumnMappingConfig } from '../types';
+import { RateRule, AuditLog, Invoice, CompanyProfile, ColumnMappingConfig, ClientReconciliationRecord } from '../types';
 import { DEFAULT_RATES, DEFAULT_MAP, DEFAULT_COMPANY_PROFILE } from '../constants/defaultData';
 
 const DB_NAME = 'Infominer_PDBilling_Enterprise_DB';
@@ -13,7 +13,9 @@ interface PersistentStore {
   overrides: Record<string, { rate: number; reason: string }>;
   auditLogs: AuditLog[];
   invoices: Invoice[];
+  reconciliations: ClientReconciliationRecord[];
   companyProfile: CompanyProfile;
+  emailContacts: any[]; // Changed to any[] to avoid missing type import issues here if not imported, or actually use ClientEmailContact
   lastUpdated: string;
 }
 
@@ -65,6 +67,7 @@ export async function saveToPersistentDB(data: Partial<PersistentStore>): Promis
         colLoanAmt: 'Applied_Loan_Amt',
         colBranch: 'branch_name',
         colActivityNm: 'activity_name',
+        colDeletionDate: 'deletion_date',
       },
       fileName: data.fileName ?? existing?.fileName ?? 'MC_Report.xlsx',
       rates: data.rates ?? existing?.rates ?? DEFAULT_RATES,
@@ -72,7 +75,9 @@ export async function saveToPersistentDB(data: Partial<PersistentStore>): Promis
       overrides: data.overrides ?? existing?.overrides ?? {},
       auditLogs: data.auditLogs ?? existing?.auditLogs ?? [],
       invoices: data.invoices ?? existing?.invoices ?? [],
+      reconciliations: data.reconciliations ?? existing?.reconciliations ?? [],
       companyProfile: data.companyProfile ?? existing?.companyProfile ?? DEFAULT_COMPANY_PROFILE,
+      emailContacts: data.emailContacts ?? existing?.emailContacts ?? [],
       lastUpdated: new Date().toISOString(),
     };
 

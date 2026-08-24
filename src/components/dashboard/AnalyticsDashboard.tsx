@@ -176,9 +176,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 }}
               ></div>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1.5 block truncate">
-              {stats.exceptionCases > 0 ? `${stats.exceptionCases} exceptions need review` : 'All records resolved'}
-            </span>
+            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+              <span className="truncate">
+                {stats.exceptionCases > 0 ? `${stats.exceptionCases} exceptions need review` : 'All records resolved'}
+              </span>
+              {stats.leftoverCases > 0 && (
+                <span className="text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
+                  {stats.leftoverCases} Leftovers
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -387,6 +394,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       {c.isCancelled ? (
                         <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
                           Cancelled
+                        </span>
+                      ) : c.isLeftover ? (
+                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                          Leftover
                         </span>
                       ) : c.isBillable ? (
                         <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">

@@ -9,6 +9,8 @@ import { ClientMappingSection } from './components/mapping/ClientMappingSection'
 import { EditableRecordsTable } from './components/records/EditableRecordsTable';
 import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
 import { InvoiceManager } from './components/invoices/InvoiceManager';
+import { EmailDraftingSection } from './components/emails/EmailDraftingSection';
+import { ReconciliationSection } from './components/reconciliation/ReconciliationSection';
 import { DownloadCenter } from './components/reports/DownloadCenter';
 import { AuditLogsViewer } from './components/audit/AuditLogsViewer';
 import { DocumentationView } from './components/docs/DocumentationView';
@@ -20,6 +22,8 @@ import {
   AuditLog,
   Invoice,
   CompanyProfile,
+  ClientEmailContact,
+  ClientReconciliationRecord,
 } from './types';
 import {
   DEFAULT_RATES,
@@ -55,6 +59,8 @@ function MainBillingApp() {
   const [clientMap, setClientMap] = useState<Record<string, string>>(DEFAULT_MAP);
   const [overrides, setOverrides] = useState<Record<string, { rate: number; reason: string }>>({});
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [reconciliations, setReconciliations] = useState<ClientReconciliationRecord[]>([]);
+  const [emailContacts, setEmailContacts] = useState<ClientEmailContact[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile>(DEFAULT_COMPANY_PROFILE);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoadedFromDB, setIsLoadedFromDB] = useState(false);
@@ -74,6 +80,8 @@ function MainBillingApp() {
         if (stored.clientMap) setClientMap(stored.clientMap);
         if (stored.overrides) setOverrides(stored.overrides);
         if (stored.invoices) setInvoices(stored.invoices);
+        if (stored.reconciliations) setReconciliations(stored.reconciliations);
+        if (stored.emailContacts) setEmailContacts(stored.emailContacts);
         if (stored.companyProfile) setCompanyProfile(stored.companyProfile);
         if (stored.auditLogs) setAuditLogs(stored.auditLogs);
       } else {
@@ -102,6 +110,8 @@ function MainBillingApp() {
       overrides,
       auditLogs,
       invoices,
+      reconciliations,
+      emailContacts,
       companyProfile,
     });
   }, [
@@ -113,6 +123,8 @@ function MainBillingApp() {
     overrides,
     auditLogs,
     invoices,
+    reconciliations,
+    emailContacts,
     companyProfile,
     isLoadedFromDB,
   ]);
@@ -214,7 +226,15 @@ function MainBillingApp() {
 
   const handleUpdateMapping = (newMap: Record<string, string>) => {
     setClientMap(newMap);
-    addAuditLog('UPDATE_MAPPING', 'Updated client name mappings');
+    addAuditLog(
+      'UPDATE_MAPPING',
+      'Updated client name mappings'
+    );
+  };
+
+  const handleRawDataEdit = (updatedCases: Record<string, any>[]) => {
+    setRawCases(updatedCases);
+    addAuditLog('UPLOAD_DATA', `Edited raw case data in spreadsheet viewer.`);
   };
 
   const handleUpdateCase = (updatedCase: CaseRecord, reason?: string) => {
@@ -227,6 +247,30 @@ function MainBillingApp() {
           reason: reason || updatedCase.overrideReason || 'Manual adjustment',
         },
       }));
+    }
+
+    // Update raw data to persist properties like isLeftover or manual string edits done in the table modal
+    if (updatedCase._rawRow) {
+      setRawCases((prev) => {
+        const newData = [...prev];
+        const targetRow = updatedCase._rawRow;
+        const index = newData.indexOf(targetRow!);
+        if (index > -1) {
+          newData[index] = { 
+            ...newData[index], 
+            _isLeftover: updatedCase.isLeftover 
+          };
+        } else if (updatedCase._rawRow && (updatedCase._rawRow as any)._rawRowIdx !== undefined) {
+          const rawIdx = (updatedCase._rawRow as any)._rawRowIdx;
+          if (newData[rawIdx]) {
+            newData[rawIdx] = { 
+              ...newData[rawIdx], 
+              _isLeftover: updatedCase.isLeftover 
+            };
+          }
+        }
+        return newData;
+      });
     }
 
     addAuditLog(
@@ -300,6 +344,11 @@ function MainBillingApp() {
     addAuditLog('GENERATE_INVOICE', `Deleted invoice ${invoiceId}`, { targetId: invoiceId });
   };
 
+  const handleAddReconciliation = (record: ClientReconciliationRecord) => {
+    setReconciliations(prev => [record, ...prev]);
+    addAuditLog('RECONCILIATION', `Added settlement record for ${record.clientId}`);
+  };
+
   const handleAuditExport = (reportName: string) => {
     confetti({ particleCount: 40, spread: 40, origin: { y: 0.8 } });
     addAuditLog('EXPORT_EXCEL', `Exported report: ${reportName}`);
@@ -331,6 +380,8 @@ function MainBillingApp() {
             fileName={fileName}
             onProceedToRates={() => setActiveTab('rates')}
             samplePreviewCases={allCases}
+            rawCases={rawCases}
+            onRawDataEdit={handleRawDataEdit}
           />
         )}
 
@@ -376,16 +427,26 @@ function MainBillingApp() {
           />
         )}
 
-        {/* activeTab === 'invoices' && (
-          <InvoiceManager
+        {activeTab === 'emails' && (
+          <EmailDraftingSection 
             cases={allCases}
-            invoices={invoices}
-            companyProfile={companyProfile}
-            onSaveInvoice={handleSaveInvoice}
-            onDeleteInvoice={handleDeleteInvoice}
-            onUpdateCompanyProfile={setCompanyProfile}
+            emailContacts={emailContacts}
+            onUpdateContact={(updatedContact) => {
+              setEmailContacts(prev => {
+                const filtered = prev.filter(c => c.clientId !== updatedContact.clientId);
+                return [...filtered, updatedContact];
+              });
+            }}
           />
-        ) */}
+        )}
+
+        {activeTab === 'reconciliation' && (
+          <ReconciliationSection
+            cases={allCases}
+            reconciliations={reconciliations}
+            onAddReconciliation={handleAddReconciliation}
+          />
+        )}
 
         {activeTab === 'reports' && (
           <DownloadCenter

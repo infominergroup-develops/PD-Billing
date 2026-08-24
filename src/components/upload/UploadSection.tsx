@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { detectColumnNames, deduplicateRawRows } from '../../utils/billingEngine';
 import { SAMPLE_CASES_RAW } from '../../constants/defaultData';
+import { RawExcelViewer } from './RawExcelViewer';
 
 interface UploadSectionProps {
   onDataLoaded: (rawCases: Record<string, any>[], fileName: string, cols: ColumnMappingConfig) => void;
@@ -23,6 +24,8 @@ interface UploadSectionProps {
   fileName?: string;
   onProceedToRates: () => void;
   samplePreviewCases: CaseRecord[];
+  rawCases: Record<string, any>[];
+  onRawDataEdit: (updatedCases: Record<string, any>[]) => void;
 }
 
 export const UploadSection: React.FC<UploadSectionProps> = ({
@@ -33,6 +36,8 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   fileName,
   onProceedToRates,
   samplePreviewCases,
+  rawCases,
+  onRawDataEdit,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -295,6 +300,15 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             </table>
           </div>
         </div>
+      )}
+
+      {/* Raw Excel Data Viewer */}
+      {hasData && rawCases.length > 0 && (
+        <RawExcelViewer 
+          rawCases={rawCases} 
+          fileName={fileName} 
+          onRawDataEdit={onRawDataEdit}
+        />
       )}
     </div>
   );

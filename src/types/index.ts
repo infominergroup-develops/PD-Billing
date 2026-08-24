@@ -2,6 +2,9 @@ export interface RateRule {
   id: number;
   client: string;
   state: string;
+  product?: string;
+  branch?: string;
+  city?: string;
   flat: number | null;
   s1k: number | null;
   s1r: number | null;
@@ -9,6 +12,27 @@ export interface RateRule {
   s2r: number | null;
   s3r: number | null;
   other: number | null;
+}
+
+export interface ClientEmailContact {
+  clientId: string;
+  toEmail: string;
+  ccEmail: string;
+}
+
+export interface ClientReconciliationRecord {
+  id: string;
+  clientId: string;
+  month: string;
+  systemCases: number;
+  systemAmount: number;
+  clientReportedCases: number;
+  clientReportedAmount: number;
+  discrepancyCases: number;
+  discrepancyAmount: number;
+  remarks: string;
+  createdAt: string;
+  createdBy: string;
 }
 
 export interface CaseRecord {
@@ -44,6 +68,7 @@ export interface CaseRecord {
   isBillable: boolean;
   isException: boolean;
   isCancelled: boolean;
+  isLeftover?: boolean;
   deletionDate?: string;
   updatedAt?: string;
   updatedBy?: string;
@@ -183,6 +208,7 @@ export interface DashboardStats {
   totalBillingAmt: number;
   exceptionCases: number;
   cancelledCases: number;
+  leftoverCases: number;
   uniqueClients: number;
   avgBillingPerCase: number;
   topClients: { name: string; cases: number; amount: number }[];
