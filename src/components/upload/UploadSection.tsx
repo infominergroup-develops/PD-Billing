@@ -247,60 +247,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
         )}
       </div>
 
-      {/* Upload Preview Table */}
-      {hasData && samplePreviewCases.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-[#2d3e50] flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-[#eb8a23]" />
-                Dataset Ingestion Preview
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Showing sample rows after deduplication and column detection
-              </p>
-            </div>
-            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
-              First {Math.min(10, samplePreviewCases.length)} rows
-            </span>
-          </div>
 
-          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 max-h-72">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-[#2d3e50] text-white font-bold sticky top-0">
-                <tr>
-                  <th className="p-2.5 whitespace-nowrap">Client Application Number</th>
-                  <th className="p-2.5 whitespace-nowrap">Client Name</th>
-                  <th className="p-2.5 whitespace-nowrap">Applicant</th>
-                  <th className="p-2.5 whitespace-nowrap">City</th>
-                  <th className="p-2.5 whitespace-nowrap">State</th>
-                  <th className="p-2.5 whitespace-nowrap">Product</th>
-                  <th className="p-2.5 whitespace-nowrap">Billing KM</th>
-                  <th className="p-2.5 whitespace-nowrap">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {samplePreviewCases.slice(0, 10).map((c, i) => (
-                  <tr key={c.id || i} className="hover:bg-slate-50/80">
-                    <td className="p-2.5 font-mono text-[#2d3e50] font-bold">{c.clientApplicationNumber}</td>
-                    <td className="p-2.5 text-slate-800">{c.clientDb}</td>
-                    <td className="p-2.5 text-slate-700">{c.applicantName}</td>
-                    <td className="p-2.5 text-slate-600">{c.city || '—'}</td>
-                    <td className="p-2.5 text-slate-600">{c.state || '—'}</td>
-                    <td className="p-2.5 text-slate-600">{c.product || '—'}</td>
-                    <td className="p-2.5 font-bold text-[#eb8a23]">{c.kmUsedForBilling ?? '—'}</td>
-                    <td className="p-2.5">
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                        {c.caseStatus || 'Loaded'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Raw Excel Data Viewer */}
       {hasData && rawCases.length > 0 && (
