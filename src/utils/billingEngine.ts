@@ -5,6 +5,10 @@ export function norm(s: string | null | undefined): string {
   return String(s || '').trim().toLowerCase();
 }
 
+export function strictNorm(s: string | null | undefined): string {
+  return String(s || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 export function parseKM(v: any): number | null {
   if (v === null || v === undefined || v === '') return null;
   const n = parseFloat(String(v).replace(/[^0-9.]/g, ''));
@@ -21,7 +25,7 @@ export function detectColumnNames(sampleRow: Record<string, any>): ColumnMapping
   return {
     colClientApplicationNumber: keyMap['clientapplicationnumber'] || keyMap['applicationnumber'] || keyMap['appno'] || keyMap['caseid'] || keyMap['caseno'] || keyMap['id'] || null,
     colClient: keyMap['clientname'] || keyMap['client_name'] || keyMap['client'] || null,
-    colKM: keyMap['kmrunningoneside'] || keyMap['km_running_one_side'] || keyMap['kmoneside'] || keyMap['km'] || null,
+    colKM: keyMap['kmrunningoneside'] || keyMap['km_running_one_side'] || keyMap['kmoneside'] || keyMap['km'] || keyMap['distance'] || keyMap['totalkm'] || keyMap['runningkm'] || null,
     colKMFed: keyMap['kmfeededbymis'] || keyMap['km_feeded_by_mis'] || null,
     colKMUsed: keyMap['kmusedforbilling'] || keyMap['kmused'] || keyMap['billingkm'] || null,
     colStatus: keyMap['casestatus'] || keyMap['case_status'] || keyMap['status'] || null,
@@ -66,7 +70,7 @@ export function lookupRate(
     return { rate: null, flag: 'Client not mapped', slab: '' };
   }
 
-  const cRates = rates.filter((r) => norm(r.client) === norm(masterClient));
+  const cRates = rates.filter((r) => strictNorm(r.client) === strictNorm(masterClient));
   if (!cRates.length) {
     return { rate: null, flag: 'Client not in rate sheet', slab: '' };
   }
@@ -76,19 +80,19 @@ export function lookupRate(
 
   // 1. Branch
   if (!row && branch && branch.trim()) {
-    row = cRates.find((r) => r.branch && norm(branch).includes(norm(r.branch)));
+    row = cRates.find((r) => r.branch && strictNorm(branch).includes(strictNorm(r.branch)));
   }
   // 2. City
   if (!row && city && city.trim()) {
-    row = cRates.find((r) => r.city && norm(city).includes(norm(r.city)));
+    row = cRates.find((r) => r.city && strictNorm(city).includes(strictNorm(r.city)));
   }
   // 3. Product
   if (!row && product && product.trim()) {
-    row = cRates.find((r) => r.product && norm(product).includes(norm(r.product)));
+    row = cRates.find((r) => r.product && strictNorm(product).includes(strictNorm(r.product)));
   }
   // 4. State
   if (!row && state && state.trim()) {
-    row = cRates.find((r) => r.state && norm(state).includes(norm(r.state)));
+    row = cRates.find((r) => r.state && strictNorm(state).includes(strictNorm(r.state)));
   }
   // 5. Fallback (no specific rules set)
   if (!row) {
@@ -155,7 +159,22 @@ export function processCaseRecords(
       : `CASE-${idx + 1}`;
 
     const clientDb = String(getCol(r, cols.colClient) || '').trim();
-    const rateSheetClient = clientMap[clientDb] || '';
+    
+    // Robust Mapping Lookup
+    let rateSheetClient = clientMap[clientDb] || '';
+    if (!rateSheetClient) {
+      const cNorm = strictNorm(clientDb);
+      const mappedKey = Object.keys(clientMap).find(k => strictNorm(k) === cNorm);
+      if (mappedKey) rateSheetClient = clientMap[mappedKey];
+      
+      if (!rateSheetClient) {
+        const directMatch = rates.find(rt => {
+          const rNorm = strictNorm(rt.client);
+          return rNorm === cNorm || (rNorm.length > 3 && cNorm.length > 3 && (rNorm.includes(cNorm) || cNorm.includes(rNorm)));
+        });
+        if (directMatch) rateSheetClient = directMatch.client;
+      }
+    }
     const state = String(getCol(r, cols.colState) || '').trim();
     const branch = String(getCol(r, cols.colBranch) || '').trim();
     const city = String(getCol(r, cols.colCity) || '').trim();
@@ -574,7 +593,7 @@ export function exportSingleClientReport(
   clientName: string,
   clientCases: CaseRecord[],
   rates: RateRule[],
-  groupBy: 'branch' | 'product' | 'all' = 'branch'
+  groupBy: 'branch' | 'product' | 'state' | 'city' | 'all' = 'branch'
 ) {
   const wb = XLSX.utils.book_new();
   const billable = clientCases.filter((c) => c.isBillable);
@@ -584,8 +603,8 @@ export function exportSingleClientReport(
   const rateSheetClient = clientCases[0]?.rateSheetClient || clientName;
 
   // 1. Summary
-  const gk: keyof CaseRecord = groupBy === 'product' ? 'product' : 'branch';
-  const gl = groupBy === 'product' ? 'Product' : 'Branch';
+  const gk: keyof CaseRecord = groupBy === 'product' ? 'product' : groupBy === 'state' ? 'state' : groupBy === 'city' ? 'city' : 'branch';
+  const gl = groupBy === 'product' ? 'Product' : groupBy === 'state' ? 'State' : groupBy === 'city' ? 'City' : 'Branch';
   const summaryRows = generateSummaryData(clientCases, gk, gl);
   XLSX.utils.book_append_sheet(wb, createSheetFromObjects(summaryRows), 'Summary');
 

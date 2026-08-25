@@ -105,7 +105,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200" id="reconciliation-panel">
+    <div className="w-full mx-auto space-y-6 animate-in fade-in duration-200" id="reconciliation-panel">
       {/* Header */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">

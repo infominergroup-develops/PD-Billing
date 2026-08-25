@@ -47,6 +47,27 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   // Recent 5 billable cases for the live preview bento tile
   const recentCases = allCases.slice(0, 5);
 
+  if (stats.totalCases === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-in fade-in duration-200">
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-2">
+          <PieChart className="w-10 h-10 text-slate-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-[#2d3e50]">Dashboard is Empty</h2>
+        <p className="text-slate-500 text-center max-w-md">
+          There is currently no case data to display. Please upload an Excel report to generate real-time analytics and billing insights.
+        </p>
+        <button
+          onClick={() => onNavigateTab('upload')}
+          className="mt-4 px-6 py-2.5 bg-[#eb8a23] hover:bg-[#d97917] text-white rounded-xl text-sm font-bold shadow-md transition cursor-pointer flex items-center gap-2"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>Go to Upload Center</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200" id="analytics-dashboard-panel">
       {/* Bento Header */}
@@ -168,7 +189,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </span>
               <span className="text-[10px] text-slate-400 font-medium">Billing Efficiency</span>
             </div>
-            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
               <div
                 className="bg-[#eb8a23] h-full rounded-full transition-all duration-500"
                 style={{
@@ -176,7 +197,26 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 }}
               ></div>
             </div>
-            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+            
+            {/* Exception Breakdown */}
+            {stats.exceptionCases > 0 && (
+              <div className="mt-3 space-y-1 max-h-20 overflow-y-auto pr-1">
+                {Object.entries(
+                  allCases.filter(c => c.isException).reduce((acc, c) => {
+                    const r = c.remarks || 'Unknown Error';
+                    acc[r] = (acc[r] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).map(([reason, count]) => (
+                  <div key={reason} className="flex justify-between items-center text-[10px]">
+                    <span className="text-slate-500 truncate pr-2" title={reason}>{reason}</span>
+                    <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100">
               <span className="truncate">
                 {stats.exceptionCases > 0 ? `${stats.exceptionCases} exceptions need review` : 'All records resolved'}
               </span>

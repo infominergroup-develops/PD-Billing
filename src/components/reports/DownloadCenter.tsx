@@ -76,7 +76,7 @@ export const DownloadCenter: React.FC<DownloadCenterProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200" id="download-center-container">
+    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="download-center-container">
       {/* Header Info */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2">

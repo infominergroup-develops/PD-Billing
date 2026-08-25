@@ -1,15 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Mail, Send, Copy, CheckCircle2, ChevronDown, Save } from 'lucide-react';
-import { CaseRecord, ClientEmailContact } from '../../types';
+import { Mail, Send, Copy, CheckCircle2, Save, Download, FileSpreadsheet, Paperclip } from 'lucide-react';
+import { CaseRecord, ClientEmailContact, RateRule } from '../../types';
+import { exportSingleClientReport } from '../../utils/billingEngine';
 
 interface EmailDraftingSectionProps {
   cases: CaseRecord[];
+  rates: RateRule[];
   emailContacts: ClientEmailContact[];
   onUpdateContact: (contact: ClientEmailContact) => void;
 }
 
 export const EmailDraftingSection: React.FC<EmailDraftingSectionProps> = ({
   cases,
+  rates,
   emailContacts,
   onUpdateContact
 }) => {
@@ -118,6 +121,12 @@ Infominer PD Audit Team`;
     window.location.href = mailto;
   };
 
+  const handleDownloadAttachment = () => {
+    if (!selectedClient || currentCases.length === 0) return;
+    const exportGroup = breakdownLevel === 'none' ? 'all' : breakdownLevel as 'branch' | 'product' | 'state' | 'city' | 'all';
+    exportSingleClientReport(selectedClient, currentCases, rates, exportGroup);
+  };
+
   if (clients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-in fade-in">
@@ -129,7 +138,7 @@ Infominer PD Audit Team`;
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-200">
+    <div className="w-full mx-auto space-y-6 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -238,17 +247,75 @@ Infominer PD Audit Team`;
             
             <div className="flex items-start gap-3 pt-2">
               <label className="w-12 text-right text-xs font-bold text-slate-500 pt-3">Body:</label>
-              <div className="flex-1 relative">
+              <div className="flex-1 relative flex flex-col gap-2">
                 <textarea 
                   value={emailBody}
                   readOnly
                   rows={10}
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-700 font-mono focus:outline-none leading-relaxed resize-none scrollbar-thin"
                 />
+                
+                {/* Visual Attachment Indicator */}
+                <div className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-xl w-max">
+                  <div className="bg-white p-2 rounded-lg shadow-sm">
+                    <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                      <Paperclip className="w-3 h-3" />
+                      {`${selectedClient.substring(0, 15)}_Report.xlsx`}
+                    </div>
+                    <div className="text-[10px] text-indigo-600 font-medium">
+                      (Remember to download & attach)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Excel Data Preview */}
+                <div className="mt-2 border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 border-b border-slate-200 flex justify-between items-center">
+                    <span>Excel Data Preview (First 5 records)</span>
+                    <span className="font-normal text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200">
+                      Total: {currentCases.length} rows
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[10px] whitespace-nowrap">
+                      <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                        <tr>
+                          <th className="px-3 py-1.5 font-semibold">App No</th>
+                          <th className="px-3 py-1.5 font-semibold">Applicant</th>
+                          <th className="px-3 py-1.5 font-semibold">City</th>
+                          <th className="px-3 py-1.5 font-semibold">Product</th>
+                          <th className="px-3 py-1.5 font-semibold text-right">Amount (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {currentCases.slice(0, 5).map(c => (
+                          <tr key={c.id} className="hover:bg-slate-50/50">
+                            <td className="px-3 py-1.5 font-mono text-slate-600">{c.clientApplicationNumber}</td>
+                            <td className="px-3 py-1.5 font-medium text-slate-700 truncate max-w-[120px]">{c.applicantName}</td>
+                            <td className="px-3 py-1.5 text-slate-600">{c.city || '—'}</td>
+                            <td className="px-3 py-1.5 text-slate-600">{c.product || '—'}</td>
+                            <td className="px-3 py-1.5 font-mono text-slate-700 text-right">{c.billingAmt}</td>
+                          </tr>
+                        ))}
+                        {currentCases.length > 5 && (
+                          <tr>
+                            <td colSpan={5} className="px-3 py-2 text-center text-slate-400 italic">
+                              ...and {currentCases.length - 5} more records
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 <button 
                   onClick={handleCopy}
                   className="absolute top-2 right-2 p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-[#eb8a23] transition"
-                  title="Copy to clipboard"
+                  title="Copy email body to clipboard"
                 >
                   {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                 </button>
@@ -257,6 +324,13 @@ Infominer PD Audit Team`;
           </div>
 
           <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100">
+            <button 
+              onClick={handleDownloadAttachment}
+              className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold transition"
+            >
+              <Download className="w-4 h-4 text-slate-400" />
+              Download Attachment
+            </button>
             <button 
               onClick={handleDraftEmail}
               disabled={!localContact.toEmail}

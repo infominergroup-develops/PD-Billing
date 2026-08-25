@@ -114,7 +114,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200" id="case-records-panel">
+    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="case-records-panel">
       {/* Header & Controls */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

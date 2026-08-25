@@ -28,6 +28,21 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
 }) => {
   const { canEditRates } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newClientData, setNewClientData] = useState<Partial<RateRule>>({
+    client: '',
+    state: '',
+    branch: '',
+    city: '',
+    product: '',
+    flat: null,
+    s1k: null,
+    s1r: null,
+    s2k: null,
+    s2r: null,
+    s3r: null,
+    other: null,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCellChange = (
@@ -50,10 +65,34 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
   };
 
   const handleAddRow = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleSaveNewClient = () => {
+    if (!newClientData.client) {
+      alert('Client Name is required.');
+      return;
+    }
     const newId = Math.max(...rates.map((r) => r.id), 0) + 1;
     const newRow: RateRule = {
       id: newId,
-      client: 'New Financial Institution',
+      client: newClientData.client,
+      state: newClientData.state || '',
+      branch: newClientData.branch || '',
+      city: newClientData.city || '',
+      product: newClientData.product || '',
+      flat: newClientData.flat || null,
+      s1k: newClientData.s1k || null,
+      s1r: newClientData.s1r || null,
+      s2k: newClientData.s2k || null,
+      s2r: newClientData.s2r || null,
+      s3r: newClientData.s3r || null,
+      other: newClientData.other || null,
+    };
+    onUpdateRates([...rates, newRow]);
+    setIsAddModalOpen(false);
+    setNewClientData({
+      client: '',
       state: '',
       branch: '',
       city: '',
@@ -65,8 +104,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
       s2r: null,
       s3r: null,
       other: null,
-    };
-    onUpdateRates([...rates, newRow]);
+    });
   };
 
   const handleDeleteRow = (index: number) => {
@@ -112,25 +150,43 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: null });
 
-        const importedRates: RateRule[] = rows.map((r, idx) => ({
-          id: idx + 1,
-          client: String(r['Client Name'] || r['client'] || '').trim(),
-          state: r['State'] === 'All' ? '' : String(r['State'] || r['state'] || '').trim(),
-          branch: r['Branch'] === 'All' ? '' : String(r['Branch'] || r['branch'] || '').trim(),
-          city: r['City'] === 'All' ? '' : String(r['City'] || r['city'] || '').trim(),
-          product: r['Product'] === 'All' ? '' : String(r['Product'] || r['product'] || '').trim(),
-          flat: r['Flat Rate (₹)'] !== null && r['Flat Rate (₹)'] !== '' ? Number(r['Flat Rate (₹)']) : null,
-          s1k: r['Slab 1 Max KM'] !== null && r['Slab 1 Max KM'] !== '' ? Number(r['Slab 1 Max KM']) : null,
-          s1r: r['Slab 1 Rate (₹)'] !== null && r['Slab 1 Rate (₹)'] !== '' ? Number(r['Slab 1 Rate (₹)']) : null,
-          s2k: r['Slab 2 Max KM'] !== null && r['Slab 2 Max KM'] !== '' ? Number(r['Slab 2 Max KM']) : null,
-          s2r: r['Slab 2 Rate (₹)'] !== null && r['Slab 2 Rate (₹)'] !== '' ? Number(r['Slab 2 Rate (₹)']) : null,
-          s3r: r['Beyond Slab 2 Rate (₹)'] !== null && r['Beyond Slab 2 Rate (₹)'] !== '' ? Number(r['Beyond Slab 2 Rate (₹)']) : null,
-          other: r['Site/Other Visit Rate (₹)'] !== null && r['Site/Other Visit Rate (₹)'] !== '' ? Number(r['Site/Other Visit Rate (₹)']) : null,
-        }));
+        const importedRates: RateRule[] = rows.map((r, idx) => {
+          // Normalize keys by removing ALL non-alphanumeric characters (spaces, symbols, parens, asterisks, etc.) and lowercasing
+          const normR: Record<string, any> = {};
+          Object.keys(r).forEach(k => {
+            const cleanKey = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            normR[cleanKey] = r[k];
+          });
+
+          const parseNum = (val: any) => {
+            if (val === null || val === undefined || val === '') return null;
+            const n = Number(String(val).replace(/[^0-9\.]/g, ''));
+            return isNaN(n) ? null : n;
+          };
+
+          return {
+            id: idx + 1,
+            client: String(normR['clientname'] || normR['client'] || normR['clientinstitutionname'] || r['Client Name'] || '').trim(),
+            state: normR['state'] === 'All' ? '' : String(normR['state'] || '').trim(),
+            branch: normR['branch'] === 'All' ? '' : String(normR['branch'] || '').trim(),
+            city: normR['city'] === 'All' ? '' : String(normR['city'] || '').trim(),
+            product: normR['product'] === 'All' ? '' : String(normR['product'] || '').trim(),
+            flat: parseNum(normR['flatrate'] ?? normR['flat']),
+            s1k: parseNum(normR['slab1maxkm'] ?? normR['slab1km'] ?? normR['slab1']),
+            s1r: parseNum(normR['slab1rate'] ?? normR['slab1rate₹']),
+            s2k: parseNum(normR['slab2maxkm'] ?? normR['slab2km'] ?? normR['slab2']),
+            s2r: parseNum(normR['slab2rate'] ?? normR['slab2rate₹']),
+            s3r: parseNum(normR['beyondslab2rate'] ?? normR['beyondrate'] ?? normR['beyondslab2']),
+            other: parseNum(normR['siteothervisitrate'] ?? normR['sitevisitrate'] ?? normR['sitevisit'] ?? normR['other']),
+          };
+        }).filter(r => r.client); // Filter out rows that have no client name
 
         if (importedRates.length) {
           onUpdateRates(importedRates);
           alert(`Successfully imported ${importedRates.length} master rate rules.`);
+        } else {
+          const sampleCols = rows.length > 0 ? Object.keys(rows[0]).join(', ') : 'No columns found';
+          alert(`Could not find valid rate rules in the file. Ensure you have a 'Client Name' column. Columns detected: ${sampleCols}`);
         }
       } catch (err: any) {
         alert(`Failed to import rate sheet: ${err.message}`);
@@ -152,7 +208,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
     );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200" id="master-rates-container">
+    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="master-rates-container">
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -412,6 +468,172 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
           </table>
         </div>
       </div>
+      {/* Add Client Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-[#2d3e50] flex items-center gap-2">
+                <Plus className="w-4 h-4 text-[#eb8a23]" />
+                Add New Client Rate Rule
+              </h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Client Name *</label>
+                <input
+                  type="text"
+                  value={newClientData.client || ''}
+                  onChange={(e) => setNewClientData({ ...newClientData, client: e.target.value })}
+                  placeholder="e.g. HDFC Bank"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">State</label>
+                  <input
+                    type="text"
+                    value={newClientData.state || ''}
+                    onChange={(e) => setNewClientData({ ...newClientData, state: e.target.value })}
+                    placeholder="All States"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Branch</label>
+                  <input
+                    type="text"
+                    value={newClientData.branch || ''}
+                    onChange={(e) => setNewClientData({ ...newClientData, branch: e.target.value })}
+                    placeholder="All Branches"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={newClientData.city || ''}
+                    onChange={(e) => setNewClientData({ ...newClientData, city: e.target.value })}
+                    placeholder="All Cities"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Product</label>
+                  <input
+                    type="text"
+                    value={newClientData.product || ''}
+                    onChange={(e) => setNewClientData({ ...newClientData, product: e.target.value })}
+                    placeholder="All Products"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 mt-4">
+                <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wider">Rate Configuration</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="col-span-2 md:col-span-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                    <label className="block text-xs font-semibold text-blue-800 mb-1">Flat Rate (₹)</label>
+                    <input
+                      type="number"
+                      value={newClientData.flat ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, flat: e.target.value ? Number(e.target.value) : null })}
+                      placeholder="e.g. 800"
+                      className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm font-bold text-blue-700 focus:outline-none focus:border-blue-400 bg-white"
+                    />
+                    <p className="text-[10px] text-blue-600 mt-1">If set, overrides all slabs.</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Slab 1 Max KM</label>
+                    <input
+                      type="number"
+                      value={newClientData.s1k ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, s1k: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-700 mb-1">Slab 1 Rate (₹)</label>
+                    <input
+                      type="number"
+                      value={newClientData.s1r ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, s1r: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-700 focus:outline-none focus:border-emerald-400 bg-emerald-50/30"
+                    />
+                  </div>
+                  <div className="hidden md:block"></div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Slab 2 Max KM</label>
+                    <input
+                      type="number"
+                      value={newClientData.s2k ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, s2k: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-700 mb-1">Slab 2 Rate (₹)</label>
+                    <input
+                      type="number"
+                      value={newClientData.s2r ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, s2r: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-700 focus:outline-none focus:border-emerald-400 bg-emerald-50/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-800 mb-1">Beyond Rate (₹)</label>
+                    <input
+                      type="number"
+                      value={newClientData.s3r ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, s3r: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 focus:outline-none focus:border-emerald-400 bg-emerald-50/30"
+                    />
+                  </div>
+
+                  <div className="col-span-2 md:col-span-3">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Site / Other Visit Rate (₹)</label>
+                    <input
+                      type="number"
+                      value={newClientData.other ?? ''}
+                      onChange={(e) => setNewClientData({ ...newClientData, other: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNewClient}
+                className="px-6 py-2 rounded-xl text-sm font-bold bg-[#eb8a23] text-white hover:bg-[#d97917] transition shadow-sm flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Save Client Rate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

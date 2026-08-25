@@ -370,7 +370,7 @@ function MainBillingApp() {
         onLoadSampleData={handleLoadSample}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 w-full mx-auto p-4 sm:p-6 lg:p-8">
         {activeTab === 'upload' && (
           <UploadSection
             onDataLoaded={handleDataLoaded}
@@ -430,6 +430,7 @@ function MainBillingApp() {
         {activeTab === 'emails' && (
           <EmailDraftingSection 
             cases={allCases}
+            rates={rates}
             emailContacts={emailContacts}
             onUpdateContact={(updatedContact) => {
               setEmailContacts(prev => {

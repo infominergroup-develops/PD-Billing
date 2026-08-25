@@ -11,7 +11,7 @@ import {
   Building,
   Search,
 } from 'lucide-react';
-import { norm } from '../../utils/billingEngine';
+import { norm, strictNorm } from '../../utils/billingEngine';
 
 interface ClientMappingSectionProps {
   allCases: CaseRecord[];
@@ -47,7 +47,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
     if (!masterName) return false;
     return rates.some(
       (r) =>
-        norm(r.client) === norm(masterName) &&
+        strictNorm(r.client) === strictNorm(masterName) &&
         (r.flat !== null || r.s1r !== null || r.s2r !== null || r.s3r !== null)
     );
   };
@@ -62,9 +62,11 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
     dbClients.forEach(([dbName]) => {
       if (!updated[dbName]) {
         // Look for close substring match in master rates
-        const match = masterClientNames.find((m) =>
-          norm(String(m)).includes(norm(String(dbName))) || norm(String(dbName)).includes(norm(String(m)))
-        );
+        const match = masterClientNames.find((m) => {
+          const mNorm = strictNorm(String(m));
+          const dbNorm = strictNorm(String(dbName));
+          return mNorm === dbNorm || (mNorm.length > 3 && dbNorm.length > 3 && (mNorm.includes(dbNorm) || dbNorm.includes(mNorm)));
+        });
         if (match) {
           updated[dbName] = match;
         }
@@ -81,7 +83,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
   const unmappedCount = dbClients.length - mappedCount;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200" id="client-mapping-container">
+    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="client-mapping-container">
       {/* Header Info */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -12,7 +12,7 @@ import {
   Database,
   Info,
 } from 'lucide-react';
-import { detectColumnNames, deduplicateRawRows } from '../../utils/billingEngine';
+import { detectColumnNames, deduplicateRawRows, strictNorm } from '../../utils/billingEngine';
 import { SAMPLE_CASES_RAW } from '../../constants/defaultData';
 import { RawExcelViewer } from './RawExcelViewer';
 
@@ -129,7 +129,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   const hasData = uniqueCount > 0;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200" id="upload-section-container">
+    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="upload-section-container">
       {/* Header Info */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

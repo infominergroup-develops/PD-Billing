@@ -14,7 +14,7 @@ import { InfominerLogo } from '../common/InfominerLogo';
 
 export const DocumentationView: React.FC = () => {
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200" id="docs-view-container">
+    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="docs-view-container">
       {/* Hero Card */}
       <div className="bg-[#2d3e50] text-white rounded-2xl p-8 border border-slate-700 shadow-md">
         <div className="flex items-center gap-4 mb-4">
