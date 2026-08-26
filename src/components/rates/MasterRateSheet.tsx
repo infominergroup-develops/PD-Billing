@@ -28,7 +28,15 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
 }) => {
   const { canEditRates } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [productFilter, setProductFilter] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [localRates, setLocalRates] = useState<RateRule[]>(rates);
+  const pendingUpdate = useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    setLocalRates(rates);
+  }, [rates]);
+
   const [newClientData, setNewClientData] = useState<Partial<RateRule>>({
     client: '',
     state: '',
@@ -50,18 +58,26 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
     field: keyof RateRule,
     value: string
   ) => {
-    const updated = [...rates];
-    const item = { ...updated[index] };
+    setLocalRates(prev => {
+      const updated = [...prev];
+      const item = { ...updated[index] };
 
-    if (field === 'client' || field === 'state') {
-      item[field] = value;
-    } else {
-      const num = value.trim() === '' ? null : Number(value);
-      (item as any)[field] = isNaN(num as any) ? null : num;
-    }
+      if (field === 'client' || field === 'state' || field === 'branch' || field === 'city' || field === 'product') {
+        item[field] = value;
+      } else {
+        const num = value.trim() === '' ? null : Number(value);
+        (item as any)[field] = isNaN(num as any) ? null : num;
+      }
 
-    updated[index] = item;
-    onUpdateRates(updated);
+      updated[index] = item;
+
+      if (pendingUpdate.current) clearTimeout(pendingUpdate.current);
+      pendingUpdate.current = setTimeout(() => {
+        onUpdateRates(updated);
+      }, 500);
+
+      return updated;
+    });
   };
 
   const handleAddRow = () => {
@@ -73,7 +89,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
       alert('Client Name is required.');
       return;
     }
-    const newId = Math.max(...rates.map((r) => r.id), 0) + 1;
+    const newId = Math.max(...localRates.map((r) => r.id), 0) + 1;
     const newRow: RateRule = {
       id: newId,
       client: newClientData.client,
@@ -89,7 +105,10 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
       s3r: newClientData.s3r || null,
       other: newClientData.other || null,
     };
-    onUpdateRates([...rates, newRow]);
+    if (pendingUpdate.current) clearTimeout(pendingUpdate.current);
+    const updated = [...localRates, newRow];
+    setLocalRates(updated);
+    onUpdateRates(updated);
     setIsAddModalOpen(false);
     setNewClientData({
       client: '',
@@ -109,12 +128,14 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
 
   const handleDeleteRow = (index: number) => {
     if (!window.confirm('Delete this rate configuration row?')) return;
-    const updated = rates.filter((_, i) => i !== index);
+    if (pendingUpdate.current) clearTimeout(pendingUpdate.current);
+    const updated = localRates.filter((_, i) => i !== index);
+    setLocalRates(updated);
     onUpdateRates(updated);
   };
 
   const handleExportRates = () => {
-    const data = rates.map((r) => ({
+    const data = localRates.map((r) => ({
       'Client Name': r.client,
       State: r.state || 'All',
       Branch: r.branch || 'All',
@@ -196,16 +217,33 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
     e.target.value = '';
   };
 
-  const filteredRates = rates
+  const filteredRates = localRates
     .map((r, idx) => ({ ...r, originalIndex: idx }))
-    .filter(
-      (r) =>
+    .filter((r) => {
+      // 1. Permanently remove anything that isn't PD, Income Assessment, or LIP (or empty = All)
+      const p = (r.product || '').toLowerCase();
+      const isAllowedProduct = 
+        p === '' || 
+        p.includes('pd') || 
+        p.includes('personal discussion') || 
+        p.includes('income assessment') || 
+        p.includes('lip');
+
+      if (!isAllowedProduct) return false;
+
+      // 2. Apply search text
+      const matchSearch =
         r.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (r.state && r.state.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (r.branch && r.branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (r.city && r.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (r.product && r.product.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+        (r.product && r.product.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // 3. Apply dropdown filter
+      const matchProduct = productFilter === '' || (r.product && r.product.toLowerCase().includes(productFilter.toLowerCase()));
+      
+      return matchSearch && matchProduct;
+    });
 
   return (
     <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="master-rates-container">
@@ -239,7 +277,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
 
         {/* Toolbar */}
         <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-3 pt-4 border-t border-slate-100">
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 max-w-sm">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
@@ -248,6 +286,19 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
               placeholder="Search bank / NBFC or state..."
               className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23]"
             />
+          </div>
+
+          <div className="relative max-w-[200px]">
+            <select
+              value={productFilter}
+              onChange={(e) => setProductFilter(e.target.value)}
+              className="w-full pl-3 pr-8 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23] appearance-none bg-white"
+            >
+              <option value="">All Products</option>
+              <option value="pd">PD / Personal Discussion</option>
+              <option value="income assessment">Income Assessment</option>
+              <option value="lip">LIP</option>
+            </select>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -324,13 +375,13 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredRates.map((r) => {
+              {filteredRates.map((r, visibleIndex) => {
                 const i = r.originalIndex;
                 const isFlat = r.flat !== null && r.flat !== undefined;
 
                 return (
                   <tr key={r.id} className="hover:bg-slate-50/80 transition">
-                    <td className="p-2 text-center text-slate-400 font-mono text-[11px]">{i + 1}</td>
+                    <td className="p-2 text-center text-slate-400 font-mono text-[11px]">{visibleIndex + 1}</td>
                     <td className="p-2">
                       <input
                         type="text"
