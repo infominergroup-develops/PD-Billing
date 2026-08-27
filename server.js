@@ -88,10 +88,14 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/billing', async (req, res) => {
   try {
-    // Save all client data sent in the request body to the BILLING database
-    const newData = new BillingData(req.body);
-    await newData.save();
-    res.status(201).json({ message: 'Billing data saved successfully', data: newData });
+    // Save all client data by UPSERTING a single document instead of creating a new one each time.
+    // This prevents massive data duplication every time the user makes an edit or uploads a file.
+    const result = await BillingData.findOneAndUpdate(
+      { type: 'global_app_state' },
+      { ...req.body, updatedAt: Date.now() },
+      { upsert: true, new: true }
+    );
+    res.status(200).json({ message: 'Billing data saved successfully', data: result });
   } catch (error) {
     console.error('Billing save error:', error);
     res.status(500).json({ error: 'Internal server error' });
