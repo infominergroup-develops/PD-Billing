@@ -14,7 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // MongoDB URIs
 const BASE_URI = process.env.MONGODB_URI || 'mongodb+srv://infominergroupdev_db_user:ah9lwaTpGOM3mKja@cluster0.ea2qhi2.mongodb.net';
