@@ -62,6 +62,12 @@ export function deduplicateRawRows(
     const appNo = String(getColVal(r, cols.colClientApplicationNumber)).trim().toLowerCase();
     const applicantName = String(getColVal(r, cols.colApplicant)).trim().toLowerCase();
     
+    // If both fields are missing/empty, do not group them as duplicates
+    if (!appNo && !applicantName) {
+      deduplicated.push({ ...r, _rawRowIdx: idx });
+      return;
+    }
+
     // Create a unique key using application number and applicant name
     const uniqueKey = `${appNo}_${applicantName}`;
     
