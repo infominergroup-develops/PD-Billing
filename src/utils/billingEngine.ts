@@ -32,6 +32,7 @@ export function detectColumnNames(sampleRow: Record<string, any>): ColumnMapping
     colCity: keyMap['cityname'] || keyMap['city_name'] || keyMap['city'] || null,
     colState: keyMap['state'] || keyMap['statename'] || keyMap['state_name'] || null,
     colProduct: keyMap['productname'] || keyMap['product_name'] || keyMap['product'] || null,
+    colActivityId: keyMap['activityid'] || keyMap['activity_id'] || null,
     colActivity: keyMap['activitytypes'] || keyMap['activity_types'] || keyMap['activitytype'] || null,
     colApplicant: keyMap['applicantname'] || keyMap['applicant_name'] || keyMap['applicant'] || null,
     colAppNo: keyMap['clientapplicationnumber'] || keyMap['client_application_number'] || keyMap['appno'] || null,
@@ -240,6 +241,7 @@ export function processCaseRecords(
       city: String(getCol(r, cols.colCity) || ''),
       state: state || 'Other',
       product: String(getCol(r, cols.colProduct) || 'Verification'),
+      activityId: String(getCol(r, cols.colActivityId) || ''),
       activityType: String(getCol(r, cols.colActivity) || 'PD'),
       activityName: String(getCol(r, cols.colActivityNm) || ''),
       caseReceivedDate: String(getCol(r, cols.colRecDate) || ''),
@@ -270,13 +272,12 @@ export function processCaseRecords(
     return record;
   });
 
-  // 2. Filter and sort
-  let filteredCases = initialCases;
-
-  if (cols.colDeletionDate) {
-    // Keep active cases (where deletion date is EMPTY)
-    filteredCases = initialCases.filter(c => !c.deletionDate || c.deletionDate.trim() === '');
-  }
+  // Filter out cases with non-blank deletion date or blank activity ID
+  let filteredCases = initialCases.filter(c => {
+    const hasNoDeletionDate = !c.deletionDate || c.deletionDate.trim() === '';
+    const hasActivityId = c.activityId && c.activityId.trim() !== '';
+    return hasNoDeletionDate && hasActivityId;
+  });
 
   // 3. Populate final arrays (No deduplication as requested)
   filteredCases.forEach(record => {

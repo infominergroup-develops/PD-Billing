@@ -16,8 +16,10 @@ app.use(express.json({ limit: '50mb' }));
 
 const PORT = process.env.PORT || 3001;
 
-// MongoDB URIs
-const BASE_URI = process.env.MONGODB_URI || 'mongodb+srv://infominergroupdev_db_user:ah9lwaTpGOM3mKja@cluster0.ea2qhi2.mongodb.net';
+const BASE_URI = process.env.MONGODB_URI;
+if (!BASE_URI) {
+  console.warn('WARNING: MONGODB_URI environment variable is not set!');
+}
 
 // Connections - explicitly await to prevent Vercel background connection drops
 const mongooseOpts = { serverSelectionTimeoutMS: 5000 };

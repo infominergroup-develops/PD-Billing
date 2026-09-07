@@ -46,6 +46,7 @@ export interface CaseRecord {
   city: string;
   state: string;
   product: string;
+  activityId?: string;
   activityType: string;
   activityName?: string;
   caseReceivedDate?: string;
@@ -85,6 +86,7 @@ export interface ColumnMappingConfig {
   colCity: string | null;
   colState: string | null;
   colProduct: string | null;
+  colActivityId: string | null;
   colActivity: string | null;
   colApplicant: string | null;
   colAppNo: string | null;
