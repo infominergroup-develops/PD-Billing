@@ -53,9 +53,25 @@ export function deduplicateRawRows(
   rows: Record<string, any>[],
   cols: ColumnMappingConfig
 ): Record<string, any>[] {
-  // To ensure all rows from Excel are accurately read without dropping any
-  // cases (even if Client Application Number is repeated), we skip deduplication
-  return rows.map((r, idx) => ({ ...r, _rawRowIdx: idx }));
+  const seenKeys = new Set<string>();
+  const deduplicated: Record<string, any>[] = [];
+  
+  const getColVal = (r: Record<string, any>, col: string | null) => (col && r[col] !== undefined ? r[col] : '');
+
+  rows.forEach((r, idx) => {
+    const appNo = String(getColVal(r, cols.colClientApplicationNumber)).trim().toLowerCase();
+    const applicantName = String(getColVal(r, cols.colApplicant)).trim().toLowerCase();
+    
+    // Create a unique key using application number and applicant name
+    const uniqueKey = `${appNo}_${applicantName}`;
+    
+    if (!seenKeys.has(uniqueKey)) {
+      seenKeys.add(uniqueKey);
+      deduplicated.push({ ...r, _rawRowIdx: idx });
+    }
+  });
+
+  return deduplicated;
 }
 
 export function lookupRate(
