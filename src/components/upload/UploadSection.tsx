@@ -85,8 +85,21 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
           return;
         }
 
-        const cols = detectColumnNames(rows[0]);
-        const deduplicated = deduplicateRawRows(rows, cols);
+        const cols = detectColumnNames(rows[0] || {});
+        
+        // Filter the excel first, by blank activity id and cases with deletion date
+        const getColVal = (r: Record<string, any>, col: string | null) => (col && r[col] !== undefined ? r[col] : null);
+        const filteredRows = rows.filter(r => {
+          const deletionDate = String(getColVal(r, cols.colDeletionDate) || '');
+          const activityId = String(getColVal(r, cols.colActivityId) || '');
+          
+          const hasNoDeletionDate = !deletionDate || deletionDate.trim() === '';
+          const hasActivityId = activityId && activityId.trim() !== '';
+          
+          return hasNoDeletionDate && hasActivityId;
+        });
+
+        const deduplicated = deduplicateRawRows(filteredRows, cols);
 
         onDataLoaded(deduplicated, file.name, cols);
         setIsProcessing(false);
