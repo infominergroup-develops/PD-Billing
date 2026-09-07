@@ -32,7 +32,6 @@ export function detectColumnNames(sampleRow: Record<string, any>): ColumnMapping
     colCity: keyMap['cityname'] || keyMap['city_name'] || keyMap['city'] || null,
     colState: keyMap['state'] || keyMap['statename'] || keyMap['state_name'] || null,
     colProduct: keyMap['productname'] || keyMap['product_name'] || keyMap['product'] || null,
-    colActivityId: keyMap['activityid'] || keyMap['activity_id'] || null,
     colActivity: keyMap['activitytypes'] || keyMap['activity_types'] || keyMap['activitytype'] || null,
     colApplicant: keyMap['applicantname'] || keyMap['applicant_name'] || keyMap['applicant'] || null,
     colAppNo: keyMap['clientapplicationnumber'] || keyMap['client_application_number'] || keyMap['appno'] || null,
@@ -53,31 +52,9 @@ export function deduplicateRawRows(
   rows: Record<string, any>[],
   cols: ColumnMappingConfig
 ): Record<string, any>[] {
-  const seenKeys = new Set<string>();
-  const deduplicated: Record<string, any>[] = [];
-  
-  const getColVal = (r: Record<string, any>, col: string | null) => (col && r[col] !== undefined ? r[col] : '');
-
-  rows.forEach((r, idx) => {
-    const appNo = String(getColVal(r, cols.colClientApplicationNumber)).trim().toLowerCase();
-    const applicantName = String(getColVal(r, cols.colApplicant)).trim().toLowerCase();
-    
-    // If both fields are missing/empty, do not group them as duplicates
-    if (!appNo && !applicantName) {
-      deduplicated.push({ ...r, _rawRowIdx: idx });
-      return;
-    }
-
-    // Create a unique key using application number and applicant name
-    const uniqueKey = `${appNo}_${applicantName}`;
-    
-    if (!seenKeys.has(uniqueKey)) {
-      seenKeys.add(uniqueKey);
-      deduplicated.push({ ...r, _rawRowIdx: idx });
-    }
-  });
-
-  return deduplicated;
+  // To ensure all rows from Excel are accurately read without dropping any
+  // cases (even if Client Application Number is repeated), we skip deduplication
+  return rows.map((r, idx) => ({ ...r, _rawRowIdx: idx }));
 }
 
 export function lookupRate(
@@ -263,7 +240,6 @@ export function processCaseRecords(
       city: String(getCol(r, cols.colCity) || ''),
       state: state || 'Other',
       product: String(getCol(r, cols.colProduct) || 'Verification'),
-      activityId: String(getCol(r, cols.colActivityId) || ''),
       activityType: String(getCol(r, cols.colActivity) || 'PD'),
       activityName: String(getCol(r, cols.colActivityNm) || ''),
       caseReceivedDate: String(getCol(r, cols.colRecDate) || ''),
@@ -294,12 +270,13 @@ export function processCaseRecords(
     return record;
   });
 
-  // Filter out cases with non-blank deletion date or blank activity ID
-  let filteredCases = initialCases.filter(c => {
-    const hasNoDeletionDate = !c.deletionDate || c.deletionDate.trim() === '';
-    const hasActivityId = c.activityId && c.activityId.trim() !== '';
-    return hasNoDeletionDate && hasActivityId;
-  });
+  // 2. Filter and sort
+  let filteredCases = initialCases;
+
+  if (cols.colDeletionDate) {
+    // Keep active cases (where deletion date is EMPTY)
+    filteredCases = initialCases.filter(c => !c.deletionDate || c.deletionDate.trim() === '');
+  }
 
   // 3. Populate final arrays (No deduplication as requested)
   filteredCases.forEach(record => {
