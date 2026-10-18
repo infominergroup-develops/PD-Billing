@@ -8,3 +8,4 @@ coverage/
 !.env.example
 node_modules.nosync/
 .claude/
+package-lock.json
