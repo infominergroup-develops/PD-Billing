@@ -1,3 +1,5 @@
+import type { ImportSummary } from './excelParser';
+import { SESSION_EXPIRED_EVENT } from '../context/AuthContext';
 import { RateRule, AuditLog, Invoice, CompanyProfile, ColumnMappingConfig, ClientReconciliationRecord } from '../types';
 import { DEFAULT_RATES, DEFAULT_MAP, DEFAULT_COMPANY_PROFILE } from '../constants/defaultData';
 
@@ -16,10 +18,26 @@ interface PersistentStore {
   reconciliations: ClientReconciliationRecord[];
   companyProfile: CompanyProfile;
   emailContacts: any[]; // Changed to any[] to avoid missing type import issues here if not imported, or actually use ClientEmailContact
+  importSummary?: ImportSummary | null;
   lastUpdated: string;
 }
 
 let _db: IDBDatabase | null = null;
+
+/** Fire-and-forget sync to the server; a 401 means the session expired, so return to login. */
+function postJSON(url: string, body: unknown) {
+  fetch(url, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+    .then((r) => {
+      if (r.status === 401) window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+      else if (!r.ok) console.error(`Sync to ${url} failed: HTTP ${r.status}`);
+    })
+    .catch((err) => console.error(`Sync to ${url} failed:`, err));
+}
 
 export function openIndexedDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -78,19 +96,12 @@ export async function saveToPersistentDB(data: Partial<PersistentStore>): Promis
       reconciliations: data.reconciliations ?? existing?.reconciliations ?? [],
       companyProfile: data.companyProfile ?? existing?.companyProfile ?? DEFAULT_COMPANY_PROFILE,
       emailContacts: data.emailContacts ?? existing?.emailContacts ?? [],
+      importSummary: data.importSummary !== undefined ? data.importSummary : existing?.importSummary ?? null,
       lastUpdated: new Date().toISOString(),
     };
 
     // Sync all client data to MongoDB (BILLING db)
-    try {
-      fetch('/api/billing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(merged),
-      }).catch(err => console.error('MongoDB sync error:', err));
-    } catch (e) {
-      console.error('MongoDB sync trigger failed:', e);
-    }
+    postJSON('/api/billing', merged);
 
     return new Promise((resolve, reject) => {
       const tx = db.transaction('appStore', 'readwrite');
@@ -145,19 +156,10 @@ export function createAuditEntry(
     targetId: details?.targetId,
     oldValue: details?.oldValue,
     newValue: details?.newValue,
-    ipAddress: '127.0.0.1 (Local Session)',
   };
 
   // Sync to MongoDB asynchronously
-  try {
-    fetch('/api/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(logEntry)
-    }).catch(err => console.error('Error syncing log to DB:', err));
-  } catch (e) {
-    // ignore fetch init errors
-  }
+  postJSON('/api/logs', logEntry);
 
   return logEntry;
 }

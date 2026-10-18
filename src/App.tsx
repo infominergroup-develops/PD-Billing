@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar, ActiveTab } from './components/common/Navbar';
 import { LoginPage } from './components/auth/LoginPage';
@@ -13,11 +14,12 @@ import { ReconciliationSection } from './components/reconciliation/Reconciliatio
 import { DownloadCenter } from './components/reports/DownloadCenter';
 import { AuditLogsViewer } from './components/audit/AuditLogsViewer';
 import { DocumentationView } from './components/docs/DocumentationView';
+import { InfominerMark } from './components/common/InfominerLogo';
 
 import { useBillingState } from './hooks/useBillingState';
 
 function MainBillingApp() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isCheckingSession } = useAuth();
   
   // Navigation
   const [activeTab, setActiveTab] = useState<ActiveTab>('upload');
@@ -34,6 +36,7 @@ function MainBillingApp() {
     setAuditLogs,
     allCases,
     stats,
+    importSummary,
     handleDataLoaded,
     handleClearData,
     handleLoadSample,
@@ -47,12 +50,25 @@ function MainBillingApp() {
     handleAddReconciliation,
   } = useBillingState();
 
+  // New tab → start at the top, like a page navigation
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [activeTab]);
+
+  if (isCheckingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas" aria-busy="true" aria-label="Loading">
+        <InfominerMark className="animate-pulse" style={{ height: 40 }} />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return <LoginPage onLoginSuccess={() => setActiveTab('analytics')} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] text-slate-900 flex flex-col font-sans selection:bg-[#eb8a23]/20 selection:text-[#2d3e50]">
+    <div className="min-h-screen bg-canvas text-slate-900 flex flex-col font-sans">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -63,13 +79,24 @@ function MainBillingApp() {
         onLoadSampleData={() => handleLoadSample(() => setActiveTab('analytics'))}
       />
 
-      <main className="flex-1 w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.16, 1, 0.3, 1] } }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.12, ease: [0.7, 0, 0.84, 0] } }}
+          >
         {activeTab === 'upload' && (
           <UploadSection
-            onDataLoaded={(cases, name, cols) => handleDataLoaded(cases, name, cols, () => setActiveTab('analytics'))}
+            onDataLoaded={(cases, name, cols, summary) =>
+              // Stay on the upload tab so the row-count breakdown is visible right away
+              handleDataLoaded(cases, name, cols, summary, () => {})
+            }
             onClearData={() => handleClearData(() => setActiveTab('upload'))}
             rawCount={rawCases.length}
-            uniqueCount={allCases.length}
+            stats={stats}
+            importSummary={importSummary}
             fileName={fileName}
             onProceedToRates={() => setActiveTab('rates')}
             samplePreviewCases={allCases}
@@ -158,17 +185,19 @@ function MainBillingApp() {
         )}
 
         {activeTab === 'docs' && <DocumentationView />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-4 px-6 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 print:hidden">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-[#2d3e50]">Infominer Verification &amp; Analytics</span>
-          <span>•</span>
-          <span>Enterprise PD Billing Automation Platform</span>
-        </div>
-        <div className="text-[11px] text-slate-400">
-          Internal Secure Build • Version 2026.4
+      <footer className="border-t border-slate-200/70 print:hidden">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <InfominerMark style={{ height: 16 }} />
+            <span className="font-semibold text-ink-700">Infominer</span>
+            <span className="text-slate-300">/</span>
+            <span>PD Billing &amp; Audit Platform</span>
+          </div>
+          <span>Internal build · {new Date().getFullYear()}</span>
         </div>
       </footer>
     </div>
@@ -177,8 +206,11 @@ function MainBillingApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainBillingApp />
-    </AuthProvider>
+    // reducedMotion="user": every motion animation honours the OS "reduce motion" setting
+    <MotionConfig reducedMotion="user">
+      <AuthProvider>
+        <MainBillingApp />
+      </AuthProvider>
+    </MotionConfig>
   );
 }

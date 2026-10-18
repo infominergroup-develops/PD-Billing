@@ -21,8 +21,10 @@ import {
 import {
   processCaseRecords,
   detectColumnNames,
-  deduplicateRawRows,
+  migrateLegacyState,
 } from '../utils/billingEngine';
+import { ROW_ID_KEY, withRowIds } from '../utils/excelParser';
+import type { ImportSummary } from '../utils/excelParser';
 import {
   loadFromPersistentDB,
   saveToPersistentDB,
@@ -47,6 +49,7 @@ export function useBillingState() {
   const [emailContacts, setEmailContacts] = useState<ClientEmailContact[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile>(DEFAULT_COMPANY_PROFILE);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [isLoadedFromDB, setIsLoadedFromDB] = useState(false);
 
   // Restore from IndexedDB on initial mount
@@ -54,14 +57,21 @@ export function useBillingState() {
     async function restore() {
       const stored = await loadFromPersistentDB();
       if (stored) {
-        if (stored.rawCases && stored.rawCases.length > 0) {
-          setRawCases(stored.rawCases);
+        const storedRows = stored.rawCases || [];
+        // Re-detect columns from the data itself: detection is more tolerant than older saves.
+        const cols = storedRows.length ? detectColumnNames(storedRows[0]) : stored.colConfig;
+        if (cols) setColConfig(cols);
+        if (storedRows.length > 0) {
+          const migrated = migrateLegacyState(storedRows, stored.overrides || {}, cols!);
+          setRawCases(migrated.rawCases);
+          setOverrides(migrated.overrides);
           setFileName(stored.fileName || 'Restored_MC_Report.xlsx');
+        } else if (stored.overrides) {
+          setOverrides(stored.overrides);
         }
-        if (stored.colConfig) setColConfig(stored.colConfig);
+        if (stored.importSummary) setImportSummary(stored.importSummary);
         if (stored.rates && stored.rates.length > 0) setRates(stored.rates);
         if (stored.clientMap) setClientMap(stored.clientMap);
-        if (stored.overrides) setOverrides(stored.overrides);
         if (stored.invoices) setInvoices(stored.invoices);
         if (stored.reconciliations) setReconciliations(stored.reconciliations);
         if (stored.emailContacts) setEmailContacts(stored.emailContacts);
@@ -70,8 +80,7 @@ export function useBillingState() {
       } else {
         // Initial setup demo load
         const demoCols = detectColumnNames(SAMPLE_CASES_RAW[0]);
-        const demoDeduplicated = deduplicateRawRows(SAMPLE_CASES_RAW, demoCols);
-        setRawCases(demoDeduplicated);
+        setRawCases(withRowIds(SAMPLE_CASES_RAW));
         setFileName('Sample_MC_Verification_2026.xlsx');
         setColConfig(demoCols);
       }
@@ -95,8 +104,10 @@ export function useBillingState() {
       reconciliations,
       emailContacts,
       companyProfile,
+      importSummary,
     });
   }, [
+    importSummary,
     rawCases,
     colConfig,
     fileName,
@@ -148,9 +159,11 @@ export function useBillingState() {
     newRawCases: Record<string, any>[],
     newFileName: string,
     newCols: ColumnMappingConfig,
+    summary: ImportSummary | null,
     onSuccess: () => void
   ) => {
-    setRawCases(newRawCases);
+    setRawCases(withRowIds(newRawCases));
+    setImportSummary(summary);
     setFileName(newFileName);
     setColConfig(newCols);
     setOverrides({}); // Reset overrides for new dataset
@@ -178,7 +191,9 @@ export function useBillingState() {
 
     addAuditLog(
       'UPLOAD_DATA',
-      `Uploaded and deduplicated ${newRawCases.length} cases from ${newFileName}`,
+      summary
+        ? `Uploaded ${newRawCases.length} rows from ${newFileName} (sheet "${summary.sheetName}", ${summary.blankRows} blank rows skipped)`
+        : `Loaded ${newRawCases.length} rows from ${newFileName}`,
       { targetId: newFileName }
     );
     onSuccess();
@@ -188,6 +203,7 @@ export function useBillingState() {
     if (window.confirm('This will clear all stored case records and overrides. Continue?')) {
       setRawCases([]);
       setOverrides({});
+      setImportSummary(null);
       setFileName('');
       await clearAllPersistentData();
       addAuditLog('CLEAR_DATA', 'Cleared all case datasets from browser memory');
@@ -197,8 +213,7 @@ export function useBillingState() {
 
   const handleLoadSample = (onSuccess: () => void) => {
     const demoCols = detectColumnNames(SAMPLE_CASES_RAW[0]);
-    const demoDeduplicated = deduplicateRawRows(SAMPLE_CASES_RAW, demoCols);
-    handleDataLoaded(demoDeduplicated, 'Sample_MC_Report_2026.xlsx', demoCols, onSuccess);
+    handleDataLoaded(SAMPLE_CASES_RAW, 'Sample_MC_Report_2026.xlsx', demoCols, null, onSuccess);
   };
 
   const handleUpdateRates = (newRates: RateRule[]) => {
@@ -217,40 +232,20 @@ export function useBillingState() {
   };
 
   const handleUpdateCase = (updatedCase: CaseRecord, reason?: string) => {
-    // If rate was manually overridden
     if (updatedCase.isManualOverride) {
       setOverrides((prev) => ({
         ...prev,
-        [updatedCase.clientApplicationNumber]: {
+        [updatedCase.rowId]: {
           rate: updatedCase.billingRate,
           reason: reason || updatedCase.overrideReason || 'Manual adjustment',
         },
       }));
     }
 
-    // Update raw data to persist properties like isLeftover or manual string edits done in the table modal
-    if (updatedCase._rawRow) {
-      setRawCases((prev) => {
-        const newData = [...prev];
-        const targetRow = updatedCase._rawRow;
-        const index = newData.indexOf(targetRow!);
-        if (index > -1) {
-          newData[index] = { 
-            ...newData[index], 
-            _isLeftover: updatedCase.isLeftover 
-          };
-        } else if (updatedCase._rawRow && (updatedCase._rawRow as any)._rawRowIdx !== undefined) {
-          const rawIdx = (updatedCase._rawRow as any)._rawRowIdx;
-          if (newData[rawIdx]) {
-            newData[rawIdx] = { 
-              ...newData[rawIdx], 
-              _isLeftover: updatedCase.isLeftover 
-            };
-          }
-        }
-        return newData;
-      });
-    }
+    // Persist row-level flags (e.g. leftover) on the raw row itself
+    setRawCases((prev) =>
+      prev.map((r) => (r[ROW_ID_KEY] === updatedCase.rowId ? { ...r, _isLeftover: updatedCase.isLeftover } : r))
+    );
 
     addAuditLog(
       'OVERRIDE_RATE',
@@ -261,6 +256,7 @@ export function useBillingState() {
 
   const handleAddCase = (newCase: CaseRecord) => {
     const rawObj: Record<string, any> = {
+      [ROW_ID_KEY]: newCase.rowId,
       client_application_number: newCase.clientApplicationNumber,
       client_name: newCase.clientDb,
       applicant_name: newCase.applicantName,
@@ -279,7 +275,7 @@ export function useBillingState() {
     if (newCase.billingRate > 0) {
       setOverrides((prev) => ({
         ...prev,
-        [newCase.clientApplicationNumber]: {
+        [newCase.rowId]: {
           rate: newCase.billingRate,
           reason: 'Manual Case Creation',
         },
@@ -291,21 +287,18 @@ export function useBillingState() {
     });
   };
 
-  const handleDeleteCase = (clientApplicationNumber: string) => {
-    setRawCases((prev) =>
-      prev.filter((r) => {
-        const idVal = colConfig.colClientApplicationNumber ? r[colConfig.colClientApplicationNumber] : null;
-        return String(idVal).trim() !== String(clientApplicationNumber).trim();
-      })
-    );
+  const handleDeleteCase = (rowId: string) => {
+    const target = allCases.find((c) => c.rowId === rowId);
+    setRawCases((prev) => prev.filter((r) => r[ROW_ID_KEY] !== rowId));
 
     setOverrides((prev) => {
       const next = { ...prev };
-      delete next[clientApplicationNumber];
+      delete next[rowId];
       return next;
     });
 
-    addAuditLog('DELETE_CASE', `Deleted case record ${clientApplicationNumber}`, { targetId: clientApplicationNumber });
+    const label = target?.clientApplicationNumber || rowId;
+    addAuditLog('DELETE_CASE', `Deleted case record ${label} (row ${rowId})`, { targetId: label });
   };
 
   const handleSaveInvoice = (invoice: Invoice) => {
@@ -346,6 +339,7 @@ export function useBillingState() {
     isLoadedFromDB,
     allCases,
     stats,
+    importSummary,
     handleDataLoaded,
     handleClearData,
     handleLoadSample,

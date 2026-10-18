@@ -83,16 +83,16 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
   const unmappedCount = dbClients.length - mappedCount;
 
   return (
-    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="client-mapping-container">
+    <div className="space-y-6 w-full mx-auto" id="client-mapping-container">
       {/* Header Info */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-[#2d3e50] text-white flex items-center justify-center text-xs font-black">
-                3
+              <span className="w-6 h-6 rounded-lg bg-brand-600 text-white shadow-sm flex items-center justify-center text-xs font-bold">
+                4
               </span>
-              <h1 className="text-xl font-black text-[#2d3e50]">Client Name Reconciliation</h1>
+              <h1 className="text-xl font-bold text-ink">Client Name Reconciliation</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
               Map the client names found in your MC database to the official rate sheet entry.
@@ -103,7 +103,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={autoMapAll}
-              className="inline-flex items-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-[#eb8a23] border border-orange-200 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-brand-600 border border-orange-200 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
               id="auto-match-mapping-btn"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
 
             <button
               onClick={onProceedToProcess}
-              className="inline-flex items-center gap-1.5 bg-[#eb8a23] hover:bg-[#d97917] text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer"
               id="run-billing-btn"
             >
               <Zap className="w-4 h-4 fill-white" />
@@ -130,13 +130,13 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter database client..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand-500"
             />
           </div>
 
           <div className="flex items-center gap-3 text-xs">
             <span className="font-semibold text-slate-500">
-              Total Clients in DB: <strong className="text-[#2d3e50]">{dbClients.length}</strong>
+              Total Clients in DB: <strong className="text-ink">{dbClients.length}</strong>
             </span>
             <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">
               <CheckCircle2 className="w-3 h-3" /> {mappedCount} Mapped
@@ -159,7 +159,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse" id="client-mapping-table">
-              <thead className="bg-[#2d3e50] text-white font-bold">
+              <thead className="bg-ink text-white font-bold">
                 <tr>
                   <th className="p-3">Database Client Name</th>
                   <th className="p-3 w-28 text-center">Cases in DB</th>
@@ -175,7 +175,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
                   return (
                     <tr key={dbName} className="hover:bg-slate-50/80 transition">
                       <td className="p-3">
-                        <div className="font-bold text-[#2d3e50] flex items-center gap-2">
+                        <div className="font-bold text-ink flex items-center gap-2">
                           <Building className="w-3.5 h-3.5 text-slate-400" />
                           <span>{dbName}</span>
                         </div>
@@ -189,7 +189,7 @@ export const ClientMappingSection: React.FC<ClientMappingSectionProps> = ({
                         <select
                           value={mapped}
                           onChange={(e) => handleSelectChange(dbName, e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#eb8a23] font-semibold text-xs cursor-pointer"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-brand-500 font-semibold text-xs cursor-pointer"
                         >
                           <option value="">— Unmapped / Skip —</option>
                           {masterClientNames.map((name) => (

@@ -37,6 +37,8 @@ export interface ClientReconciliationRecord {
 
 export interface CaseRecord {
   id: string;
+  /** Stable per-row id from the upload; overrides/edits/deletes key on this. */
+  rowId: string;
   clientApplicationNumber: string;
   clientAppNo: string;
   applicantName: string;
@@ -204,6 +206,8 @@ export interface CompanyProfile {
 
 export interface DashboardStats {
   totalCases: number;
+  /** Uploaded rows excluded because their deletion-date column is filled. */
+  deletedRows: number;
   billableCases: number;
   totalBillingAmt: number;
   exceptionCases: number;

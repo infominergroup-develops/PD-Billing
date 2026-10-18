@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
-import { ColumnMappingConfig, CaseRecord } from '../../types';
+import { AnimatePresence, motion } from 'motion/react';
+import { ColumnMappingConfig, CaseRecord, DashboardStats } from '../../types';
+import { PageHeader, btn } from '../common/ui';
 import {
   Upload,
   FileSpreadsheet,
@@ -11,16 +12,26 @@ import {
   ArrowRight,
   Database,
   Info,
+  Loader2,
 } from 'lucide-react';
-import { detectColumnNames, deduplicateRawRows, strictNorm } from '../../utils/billingEngine';
+import { detectColumnNames } from '../../utils/billingEngine';
+import type { ImportSummary } from '../../utils/excelParser';
+import { parseWorkbookAsync } from '../../utils/parseWorkbookAsync';
+import { ACCEPT_ATTR, validateFileSignature, validateUploadMeta } from '../../utils/uploadValidation';
 import { SAMPLE_CASES_RAW } from '../../constants/defaultData';
 import { RawExcelViewer } from './RawExcelViewer';
 
 interface UploadSectionProps {
-  onDataLoaded: (rawCases: Record<string, any>[], fileName: string, cols: ColumnMappingConfig) => void;
+  onDataLoaded: (
+    rawCases: Record<string, any>[],
+    fileName: string,
+    cols: ColumnMappingConfig,
+    summary: ImportSummary | null
+  ) => void;
   onClearData: () => void;
   rawCount: number;
-  uniqueCount: number;
+  stats: DashboardStats;
+  importSummary: ImportSummary | null;
   fileName?: string;
   onProceedToRates: () => void;
   samplePreviewCases: CaseRecord[];
@@ -32,7 +43,8 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   onDataLoaded,
   onClearData,
   rawCount,
-  uniqueCount,
+  stats,
+  importSummary,
   fileName,
   onProceedToRates,
   samplePreviewCases,
@@ -41,68 +53,71 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [stage, setStage] = useState<'idle' | 'reading' | 'parsing'>('idle');
+  const [readProgress, setReadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Kept in memory (not persisted) so another sheet can be picked without re-uploading.
+  const bufferRef = useRef<{ buffer: ArrayBuffer; fileName: string } | null>(null);
+  const isProcessing = stage !== 'idle';
+
+  const parseBuffer = async (buffer: ArrayBuffer, name: string, sheetName?: string) => {
+    setStage('parsing');
+    setErrorMessage(null);
+    try {
+      const parsed = await parseWorkbookAsync(buffer, { sheetName });
+      if (!parsed.rows.length) {
+        const s = parsed.stats;
+        setErrorMessage(
+          s.headerRowNumber
+            ? `Sheet "${s.sheetName}" has a header on row ${s.headerRowNumber} but no data rows below it.`
+            : `Sheet "${s.sheetName}" is empty.`
+        );
+        return;
+      }
+      const cols = detectColumnNames(parsed.columns);
+      onDataLoaded(parsed.rows, name, cols, { ...parsed.stats, fileName: name, sheets: parsed.sheets });
+    } catch (err: any) {
+      console.error('File parse error:', err);
+      setErrorMessage(`Could not read this file: ${err.message || 'unknown format'}`);
+    } finally {
+      setStage('idle');
+    }
+  };
 
   const processFile = (file: File) => {
-    setIsProcessing(true);
+    const metaError = validateUploadMeta(file);
+    if (metaError) {
+      setErrorMessage(metaError);
+      return;
+    }
+    setStage('reading');
+    setReadProgress(0);
     setErrorMessage(null);
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const buffer = e.target?.result as ArrayBuffer;
-        const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
-
-        let ws: XLSX.WorkSheet | null = null;
-        let sheetUsed = '';
-
-        for (const sname of wb.SheetNames) {
-          const candidate = wb.Sheets[sname];
-          if (candidate && candidate['!ref'] && candidate['!ref'] !== 'A1') {
-            ws = candidate;
-            sheetUsed = sname;
-            break;
-          }
-        }
-
-        if (!ws && wb.SheetNames.length > 0) {
-          ws = wb.Sheets[wb.SheetNames[0]];
-          sheetUsed = wb.SheetNames[0];
-        }
-
-        if (!ws) {
-          setErrorMessage('No valid spreadsheet data found in file.');
-          setIsProcessing(false);
-          return;
-        }
-
-        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: null, raw: false, blankrows: true });
-
-        if (!rows.length) {
-          setErrorMessage('The uploaded file is empty (0 rows found).');
-          setIsProcessing(false);
-          return;
-        }
-
-        const cols = detectColumnNames(rows[0]);
-        const deduplicated = deduplicateRawRows(rows, cols);
-
-        onDataLoaded(deduplicated, file.name, cols);
-        setIsProcessing(false);
-      } catch (err: any) {
-        console.error('File parse error:', err);
-        setErrorMessage(`Error parsing file: ${err.message || 'Unknown format'}`);
-        setIsProcessing(false);
-      }
+    reader.onprogress = (e) => {
+      if (e.lengthComputable) setReadProgress(Math.round((e.loaded / e.total) * 100));
     };
-
+    reader.onload = (e) => {
+      const buffer = e.target?.result as ArrayBuffer;
+      const sigError = validateFileSignature(file.name, buffer);
+      if (sigError) {
+        setErrorMessage(sigError);
+        setStage('idle');
+        return;
+      }
+      bufferRef.current = { buffer, fileName: file.name };
+      parseBuffer(buffer, file.name);
+    };
     reader.onerror = () => {
       setErrorMessage('Failed to read file from disk.');
-      setIsProcessing(false);
+      setStage('idle');
     };
-
     reader.readAsArrayBuffer(file);
+  };
+
+  const switchSheet = (sheetName: string) => {
+    if (bufferRef.current) parseBuffer(bufferRef.current.buffer, bufferRef.current.fileName, sheetName);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,139 +130,190 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
+    if (e.dataTransfer.files.length > 1) {
+      setErrorMessage('Drop one file at a time.');
+      return;
+    }
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
   };
 
   const loadDemoData = () => {
+    bufferRef.current = null;
     const cols = detectColumnNames(SAMPLE_CASES_RAW[0]);
-    const deduplicated = deduplicateRawRows(SAMPLE_CASES_RAW, cols);
-    onDataLoaded(deduplicated, 'Demo_MC_Verification_Report_2026.xlsx', cols);
+    onDataLoaded(SAMPLE_CASES_RAW, 'Demo_MC_Verification_Report_2026.xlsx', cols, null);
   };
 
-  const hasData = uniqueCount > 0;
+  const hasData = rawCount > 0;
 
   return (
-    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="upload-section-container">
-      {/* Header Info */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-[#2d3e50] text-white flex items-center justify-center text-xs font-black">
-                1
-              </span>
-              <h1 className="text-xl font-black text-[#2d3e50]">Upload Case Data (MC Report)</h1>
-            </div>
-            <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              Upload your activity-level MC Report Excel workbook (.xlsx/.xls). The engine will automatically prepare billing calculations and map your cases based on KM values and Client data.
-            </p>
-          </div>
-
-          <button
-            onClick={loadDemoData}
-            className="inline-flex items-center gap-2 bg-orange-50 hover:bg-orange-100 text-[#eb8a23] border border-orange-200 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer self-start sm:self-auto"
-            id="load-sample-in-upload-btn"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Load Sample Data</span>
+    <div className="space-y-6" id="upload-section-container">
+      <PageHeader
+        eyebrow="Step 1"
+        title="Upload MC report"
+        description="Activity-level MC report — every non-blank, non-deleted row is counted as one case."
+        actions={
+          <button onClick={loadDemoData} className={btn.secondary} id="load-sample-in-upload-btn">
+            <Sparkles className="h-4 w-4 text-brand-500" />
+            Load sample data
           </button>
-        </div>
+        }
+      />
 
+      <section className="card p-5 sm:p-6">
         {/* Dropzone */}
-        <div
+        <motion.div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload an Excel or CSV file"
+          aria-busy={isProcessing}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !isProcessing) {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
           onDragOver={(e) => {
             e.preventDefault();
             setIsDragging(true);
           }}
-          onDragLeave={() => setIsDragging(false)}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false);
+          }}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`mt-6 border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
-            hasData
-              ? 'border-emerald-400 bg-emerald-50/40'
-              : isDragging
-              ? 'border-[#eb8a23] bg-orange-50/60 scale-[1.01]'
-              : 'border-slate-300 hover:border-[#2d3e50] bg-slate-50/60 hover:bg-white'
-          }`}
+          onClick={() => !isProcessing && fileInputRef.current?.click()}
+          animate={{ scale: isDragging ? 1.01 : 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          className={`group relative overflow-hidden rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors duration-200 ${
+            isDragging
+              ? 'border-brand-500 bg-brand-50/70'
+              : hasData
+              ? 'border-emerald-300 bg-emerald-50/40 hover:border-emerald-400'
+              : 'border-slate-300 bg-slate-50/60 hover:border-brand-400 hover:bg-white'
+          } ${isProcessing ? 'cursor-progress' : 'cursor-pointer'}`}
           id="upload-dropzone"
         >
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept={ACCEPT_ATTR} className="hidden" />
 
           <div className="flex flex-col items-center">
-            {hasData ? (
-              <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-            ) : (
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 text-[#2d3e50] flex items-center justify-center mb-3 group-hover:bg-orange-100 transition">
-                <Upload className="w-7 h-7 text-[#2d3e50]" />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={isProcessing ? 'busy' : hasData ? 'done' : isDragging ? 'drag' : 'idle'}
+                initial={{ opacity: 0, scale: 0.8, y: 4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.1 } }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ring-1 ${
+                  hasData && !isProcessing
+                    ? 'bg-emerald-50 text-emerald-600 ring-emerald-100'
+                    : 'bg-white text-brand-500 ring-slate-200 group-hover:-translate-y-0.5 transition-transform'
+                }`}
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : hasData ? (
+                  <CheckCircle2 className="h-7 w-7" />
+                ) : (
+                  <Upload className={`h-6 w-6 ${isDragging ? 'animate-bounce' : ''}`} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            <h3 className="text-base font-semibold text-ink-900">
+              {stage === 'reading'
+                ? `Reading file… ${readProgress}%`
+                : stage === 'parsing'
+                ? 'Parsing workbook…'
+                : isDragging
+                ? 'Drop to upload'
+                : hasData
+                ? fileName || 'Dataset loaded'
+                : (
+                  <>
+                    <span className="text-brand-600">Choose a file</span> or drag it here
+                  </>
+                )}
+            </h3>
+
+            {stage === 'reading' && (
+              <div className="mt-3 h-1.5 w-56 overflow-hidden rounded-full bg-slate-200">
+                <motion.div
+                  className="h-full rounded-full bg-brand-500"
+                  animate={{ width: `${readProgress}%` }}
+                  transition={{ ease: 'linear', duration: 0.15 }}
+                />
               </div>
             )}
+            {stage === 'parsing' && <div className="skeleton mt-3 h-1.5 w-56 rounded-full" />}
 
-            <h3 className="text-sm font-bold text-[#2d3e50]">
-              {hasData ? fileName || 'Dataset Loaded Successfully' : 'Click to select Excel file or drag & drop here'}
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Supports .xlsx, .xls, .csv formats (Activity level MC reports)
+            <p className="mt-2 text-xs text-slate-500">
+              {hasData && !isProcessing ? 'Drop another file to replace it · ' : ''}.xlsx, .xls or .csv · up to 20 MB
             </p>
 
-            {hasData && (
-              <div className="mt-3 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-emerald-300 text-xs font-semibold text-emerald-800 shadow-xs">
-                <Database className="w-3.5 h-3.5" />
-                <span>{uniqueCount.toLocaleString('en-IN')} unique cases ready for rate mapping</span>
-              </div>
+            {hasData && !isProcessing && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-800 shadow-xs ring-1 ring-emerald-200"
+              >
+                <Database className="h-3.5 w-3.5" />
+                {stats.totalCases.toLocaleString('en-IN')} cases counted for billing
+              </motion.div>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Error Alert */}
-        {errorMessage && (
-          <div className="mt-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500" />
-            <span>{errorMessage}</span>
-          </div>
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              role="alert"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                <span>{errorMessage}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {hasData && (
+          <ImportBreakdown
+            summary={importSummary}
+            rawCount={rawCount}
+            stats={stats}
+            canSwitchSheet={!!bufferRef.current && !isProcessing}
+            onSwitchSheet={switchSheet}
+          />
         )}
 
-        {/* Status Alerts & Actions */}
         {hasData && (
-          <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs text-slate-600">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>Data is securely cached in local storage for your session.</span>
+          <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Saved in this browser and synced to the server for your session.
             </div>
-
             <div className="flex items-center gap-2">
               <button
                 onClick={onClearData}
-                className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition cursor-pointer font-semibold"
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
                 id="clear-dataset-btn"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear Stored Data</span>
+                <Trash2 className="h-4 w-4" />
+                Clear data
               </button>
-
-              <button
-                onClick={onProceedToRates}
-                className="inline-flex items-center gap-1.5 bg-[#eb8a23] hover:bg-[#d97917] text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer"
-                id="proceed-to-rates-btn"
-              >
-                <span>Step 2: Master Rate Sheet</span>
-                <ArrowRight className="w-4 h-4" />
+              <button onClick={onProceedToRates} className={`${btn.primary} group`} id="proceed-to-rates-btn">
+                Continue to rate sheet
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
             </div>
           </div>
         )}
-      </div>
-
-
+      </section>
 
       {/* Raw Excel Data Viewer */}
       {hasData && rawCases.length > 0 && (
@@ -260,3 +326,83 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     </div>
   );
 };
+
+const fmt = (n: number) => n.toLocaleString('en-IN');
+
+const BreakdownRow: React.FC<{ label: string; value: string; tone?: 'muted' | 'total' }> = ({ label, value, tone }) => (
+  <div
+    className={`flex items-center justify-between py-1.5 ${
+      tone === 'total' ? 'border-t border-slate-200 font-bold text-ink' : tone === 'muted' ? 'text-slate-500' : 'text-slate-700'
+    }`}
+  >
+    <span>{label}</span>
+    <span className="tabular-nums">{value}</span>
+  </div>
+);
+
+/** Shows exactly how the uploaded rows became the counted cases, so every number can be checked. */
+const ImportBreakdown: React.FC<{
+  summary: ImportSummary | null;
+  rawCount: number;
+  stats: DashboardStats;
+  canSwitchSheet: boolean;
+  onSwitchSheet: (name: string) => void;
+}> = ({ summary, rawCount, stats, canSwitchSheet, onSwitchSheet }) => (
+  <div className="mt-6 grid gap-4 text-xs md:grid-cols-2">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
+      <h4 className="mb-2 text-sm font-semibold text-ink-900">How rows were counted</h4>
+      {summary ? (
+        <>
+          <BreakdownRow label="Rows below the header" value={fmt(summary.scannedRows)} />
+          <BreakdownRow label="− Blank rows skipped" value={fmt(summary.blankRows)} tone="muted" />
+          {summary.repeatedHeaderRows > 0 && (
+            <BreakdownRow label="− Repeated header rows skipped" value={fmt(summary.repeatedHeaderRows)} tone="muted" />
+          )}
+          <BreakdownRow label="= Rows imported" value={fmt(summary.dataRows)} tone="total" />
+          {rawCount !== summary.dataRows && (
+            <BreakdownRow label="Rows now (after manual adds/deletes)" value={fmt(rawCount)} tone="muted" />
+          )}
+        </>
+      ) : (
+        <BreakdownRow label="Rows loaded" value={fmt(rawCount)} />
+      )}
+      <BreakdownRow label="− Rows with a deletion date" value={fmt(stats.deletedRows)} tone="muted" />
+      <BreakdownRow label="= Cases counted" value={fmt(stats.totalCases)} tone="total" />
+    </div>
+
+    <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
+      <h4 className="mb-2 text-sm font-semibold text-ink-900">Cases counted</h4>
+      <BreakdownRow label="Billable" value={fmt(stats.billableCases)} />
+      <BreakdownRow label="Exceptions (no rate / KM)" value={fmt(stats.exceptionCases)} />
+      <BreakdownRow label="Cancelled – not billed" value={fmt(stats.cancelledCases)} />
+      <BreakdownRow
+        label="Total billing"
+        value={`₹${stats.totalBillingAmt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+        tone="total"
+      />
+      {summary && (
+        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2 text-slate-500">
+          <span>Sheet</span>
+          {summary.sheets.length > 1 ? (
+            <select
+              value={summary.sheetName}
+              disabled={!canSwitchSheet}
+              onChange={(e) => onSwitchSheet(e.target.value)}
+              title={canSwitchSheet ? 'Read a different sheet' : 'Re-upload the file to switch sheets'}
+              className="border border-slate-300 rounded-lg px-2 py-1 bg-white text-slate-700 disabled:opacity-60"
+            >
+              {summary.sheets.map((sh) => (
+                <option key={sh.name} value={sh.name}>
+                  {sh.name} ({fmt(sh.dataRows)} rows)
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="font-semibold text-slate-700">{summary.sheetName}</span>
+          )}
+          <span>· header on row {summary.headerRowNumber}</span>
+        </div>
+      )}
+    </div>
+  </div>
+);

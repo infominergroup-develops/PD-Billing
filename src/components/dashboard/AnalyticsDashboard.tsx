@@ -1,25 +1,31 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
+import { motion } from 'motion/react';
 import { DashboardStats, CaseRecord } from '../../types';
 import {
-  TrendingUp,
-  Receipt,
-  AlertTriangle,
-  XCircle,
-  Building2,
-  MapPin,
+  IndianRupee,
   FileSpreadsheet,
-  ArrowUpRight,
-  Filter,
-  DollarSign,
-  PieChart,
+  Building2,
+  Gauge,
+  MapPin,
   Layers,
-  ChevronRight,
-  Clock,
-  ShieldCheck,
+  AlertTriangle,
+  ArrowRight,
+  Upload,
+  History,
   CheckCircle2,
-  Sparkles,
-  Zap,
 } from 'lucide-react';
+import {
+  AnimatedNumber,
+  BarRow,
+  PageHeader,
+  Panel,
+  StatCard,
+  StatusBadge,
+  btn,
+  staggerParent,
+  staggerChild,
+  CaseStatus,
+} from '../common/ui';
 
 interface AnalyticsDashboardProps {
   stats: DashboardStats;
@@ -28,450 +34,266 @@ interface AnalyticsDashboardProps {
   onFilterClient?: (client: string) => void;
 }
 
-export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
-  stats,
-  allCases,
-  onNavigateTab,
-  onFilterClient,
-}) => {
-  const [selectedStateFilter, setSelectedStateFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+const inr = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+const plural = (n: number, word: string) => `${inr(n)} ${word}${n === 1 ? '' : 's'}`;
+const statusOf = (c: CaseRecord): CaseStatus =>
+  c.isCancelled ? 'cancelled' : c.isLeftover ? 'leftover' : c.isBillable ? 'billable' : 'exception';
 
-  const filteredTopClients = stats.topClients.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+const CLIENT_COLORS = ['bg-ink', 'bg-brand-500', 'bg-sun', 'bg-ink-400', 'bg-brand-300'];
 
-  const maxClientAmount = stats.topClients.length > 0 ? stats.topClients[0].amount : 1;
-  const maxStateAmount = stats.stateBreakdown.length > 0 ? stats.stateBreakdown[0].amount : 1;
-
-  // Recent 5 billable cases for the live preview bento tile
-  const recentCases = allCases.slice(0, 5);
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ stats, allCases, onNavigateTab }) => {
+  const exceptionReasons = useMemo(() => {
+    const m = new Map<string, number>();
+    allCases.forEach((c) => {
+      if (c.isException) m.set(c.remarks || 'Unknown', (m.get(c.remarks || 'Unknown') || 0) + 1);
+    });
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [allCases]);
 
   if (stats.totalCases === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-in fade-in duration-200">
-        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-          <PieChart className="w-10 h-10 text-slate-400" />
-        </div>
-        <h2 className="text-2xl font-bold text-[#2d3e50]">Dashboard is Empty</h2>
-        <p className="text-slate-500 text-center max-w-md">
-          There is currently no case data to display. Please upload an Excel report to generate real-time analytics and billing insights.
-        </p>
-        <button
-          onClick={() => onNavigateTab('upload')}
-          className="mt-4 px-6 py-2.5 bg-[#eb8a23] hover:bg-[#d97917] text-white rounded-xl text-sm font-bold shadow-md transition cursor-pointer flex items-center gap-2"
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-md ring-1 ring-slate-200"
         >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Go to Upload Center</span>
+          <Upload className="h-7 w-7 text-brand-500" />
+        </motion.div>
+        <h2 className="text-xl font-bold tracking-tight text-ink-900">No billing data yet</h2>
+        <p className="mt-2 max-w-sm text-sm text-slate-500">
+          Upload an activity-level MC report to see billing totals, exceptions and client breakdowns here.
+        </p>
+        <button onClick={() => onNavigateTab('upload')} className={`${btn.primary} mt-6`}>
+          <FileSpreadsheet className="h-4 w-4" />
+          Upload a report
         </button>
       </div>
     );
   }
 
+  const billableBase = stats.totalCases - stats.cancelledCases;
+  const coverage = billableBase ? (stats.billableCases / billableBase) * 100 : 100;
+  const maxClient = Math.max(1, ...stats.topClients.map((c) => c.amount));
+  const maxState = Math.max(1, ...stats.stateBreakdown.map((s) => s.amount));
+  const recentCases = allCases.slice(0, 6);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200" id="analytics-dashboard-panel">
-      {/* Bento Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-[#2d3e50] tracking-tight">Real-Time Analytics</h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eb8a23]/15 text-[#d97917] uppercase tracking-wider">
-              Live Sync
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Operational intelligence for {stats.totalCases.toLocaleString('en-IN')} cases across {stats.uniqueClients} financial institutions
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => onNavigateTab('audit')}
-            className="px-3.5 py-2 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
-            id="bento-export-audit-btn"
-          >
-            Export Audit
-          </button>
-          <button
-            onClick={() => onNavigateTab('records')}
-            className="px-4 py-2 bg-[#eb8a23] hover:bg-[#d97917] text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center gap-1.5"
-            id="bento-new-entry-btn"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Manage Records</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Bento Grid Architecture */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" id="bento-grid-container">
-        {/* Bento Tile 1: Total Revenue */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
-            <div className="w-7 h-7 rounded-lg bg-orange-50 text-[#eb8a23] flex items-center justify-center">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-[#2d3e50]">
-                ₹{stats.totalBillingAmt.toLocaleString('en-IN')}
-              </h2>
-              <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">
-                {stats.billableCases} billable cases
-              </span>
-            </div>
-            <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
-              +100% Verified
-            </span>
-          </div>
-        </div>
-
-        {/* Bento Tile 2: Active Clients */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Clients</p>
-            <div className="w-7 h-7 rounded-lg bg-slate-100 text-[#2d3e50] flex items-center justify-center">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-[#2d3e50]">
-                {stats.uniqueClients}
-              </h2>
-              <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">
-                Banks &amp; NBFC Partners
-              </span>
-            </div>
-            <span className="text-xs text-[#eb8a23] font-bold bg-orange-50 px-2 py-0.5 rounded-md">
-              Mapped Slabs
-            </span>
-          </div>
-        </div>
-
-        {/* Bento Tile 3: Avg Rate / Case */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg. Rate / Case</p>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Layers className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-[#2d3e50]">
-                ₹{stats.avgBillingPerCase.toLocaleString('en-IN')}
-              </h2>
-              <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">
-                Distance weighted average
-              </span>
-            </div>
-            <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">
-              Slab Tier
-            </span>
-          </div>
-        </div>
-
-        {/* Bento Tile 4: Automation Accuracy / System Health */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">System Health</p>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-bold text-[#2d3e50]">
-                {stats.totalCases ? (100 - Math.round((stats.exceptionCases / stats.totalCases) * 100)).toFixed(1) : '100'}%
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">Billing Efficiency</span>
-            </div>
-            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
-              <div
-                className="bg-[#eb8a23] h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${stats.totalCases ? Math.max(10, 100 - Math.round((stats.exceptionCases / stats.totalCases) * 100)) : 100}%`,
-                }}
-              ></div>
-            </div>
-            
-            {/* Exception Breakdown */}
-            {stats.exceptionCases > 0 && (
-              <div className="mt-3 space-y-1 max-h-20 overflow-y-auto pr-1">
-                {Object.entries(
-                  allCases.filter(c => c.isException).reduce((acc, c) => {
-                    const r = c.remarks || 'Unknown Error';
-                    acc[r] = (acc[r] || 0) + 1;
-                    return acc;
-                  }, {} as Record<string, number>)
-                ).map(([reason, count]) => (
-                  <div key={reason} className="flex justify-between items-center text-[10px]">
-                    <span className="text-slate-500 truncate pr-2" title={reason}>{reason}</span>
-                    <span className="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{count}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100">
-              <span className="truncate">
-                {stats.exceptionCases > 0 ? `${stats.exceptionCases} exceptions need review` : 'All records resolved'}
-              </span>
-              {stats.leftoverCases > 0 && (
-                <span className="text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
-                  {stats.leftoverCases} Leftovers
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Bento Tile 5: Client-Wise Billing Distribution (Spans 2 columns) */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-sm text-[#2d3e50]">Client-Wise Billing Distribution</h3>
-              <p className="text-[11px] text-slate-400">Revenue split across top institutional partners</p>
-            </div>
-            <span className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 font-semibold">
-              {stats.topClients.length} Institutions
-            </span>
-          </div>
-
-          <div className="flex-1 flex flex-col gap-3.5 justify-center mt-2">
-            {stats.topClients.slice(0, 5).map((client, idx) => {
-              const colors = ['bg-[#2d3e50]', 'bg-[#eb8a23]', 'bg-[#e8a020]', 'bg-slate-700', 'bg-amber-600'];
-              const barColor = colors[idx % colors.length];
-              const percent = Math.round((client.amount / (maxClientAmount || 1)) * 100);
-
-              return (
-                <div key={client.name} className="space-y-1">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium text-slate-700 truncate max-w-[200px]">{client.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400">{client.cases} cases</span>
-                      <span className="font-bold text-[#2d3e50]">₹{client.amount.toLocaleString('en-IN')}</span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                    <div
-                      className={`${barColor} h-full rounded-full transition-all duration-500`}
-                      style={{ width: `${percent}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bento Tile 6: Recent Activity & Audit Logs (Spans 2 columns) */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-sm text-[#2d3e50]">Recent Verification Activity</h3>
-              <p className="text-[11px] text-slate-400">System audit trail &amp; automated rate actions</p>
-            </div>
-            <button
-              onClick={() => onNavigateTab('audit')}
-              className="text-xs text-[#eb8a23] hover:underline font-bold"
-            >
-              View All Logs →
+    <div className="space-y-6" id="analytics-dashboard-panel">
+      <PageHeader
+        eyebrow="Dashboard"
+        title="Billing overview"
+        description={`${inr(stats.totalCases)} cases across ${stats.uniqueClients} clients`}
+        actions={
+          <>
+            <button onClick={() => onNavigateTab('audit')} className={btn.secondary} id="bento-export-audit-btn">
+              <History className="h-4 w-4" />
+              Audit trail
             </button>
-          </div>
+            <button onClick={() => onNavigateTab('records')} className={btn.primary} id="bento-new-entry-btn">
+              <FileSpreadsheet className="h-4 w-4" />
+              Case records
+            </button>
+          </>
+        }
+      />
 
-          <div className="space-y-3.5 overflow-hidden">
-            <div className="flex items-start gap-3 border-l-2 border-[#eb8a23] pl-3 py-0.5">
-              <div className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Live Sync</div>
-              <div className="text-xs">
-                <span className="font-bold text-[#2d3e50]">Billing Engine</span> recalculated{' '}
-                <span className="text-[#eb8a23] font-medium">{stats.billableCases} billable cases</span> across active slabs
-              </div>
-            </div>
+      <motion.div
+        variants={staggerParent}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        id="bento-grid-container"
+      >
+        <StatCard label="Total billing" icon={IndianRupee} tone="brand" footer={`${plural(stats.billableCases, 'billable case')}`}>
+          <AnimatedNumber value={stats.totalBillingAmt} prefix="₹" />
+        </StatCard>
 
-            <div className="flex items-start gap-3 border-l-2 border-slate-200 pl-3 py-0.5">
-              <div className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Rule Match</div>
-              <div className="text-xs">
-                <span className="font-bold text-[#2d3e50]">Deduplication</span> resolved duplicate records by Client Application Number
-              </div>
-            </div>
+        <StatCard
+          label="Cases counted"
+          icon={FileSpreadsheet}
+          tone="ink"
+          footer={
+            <>
+              {plural(stats.exceptionCases, 'exception')} · {inr(stats.cancelledCases)} cancelled
+              {stats.deletedRows > 0 && ` · ${inr(stats.deletedRows)} deleted rows excluded`}
+            </>
+          }
+        >
+          <AnimatedNumber value={stats.totalCases} />
+        </StatCard>
 
-            <div className="flex items-start gap-3 border-l-2 border-slate-200 pl-3 py-0.5">
-              <div className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Compliance</div>
-              <div className="text-xs">
-                <span className="font-bold text-[#2d3e50]">Cancelled Cases</span> routed {stats.cancelledCases} records to zero-billing
-              </div>
-            </div>
+        <StatCard
+          label="Average per billable case"
+          icon={Building2}
+          tone="slate"
+          footer={`Across ${stats.uniqueClients} client${stats.uniqueClients === 1 ? '' : 's'}`}
+        >
+          <AnimatedNumber value={stats.avgBillingPerCase} prefix="₹" />
+        </StatCard>
 
-            <div className="flex items-start gap-3 border-l-2 border-slate-200 pl-3 py-0.5">
-              <div className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Security</div>
-              <div className="text-xs">
-                <span className="font-bold text-[#2d3e50]">System Session</span> verified in encrypted local storage
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bento Tile 7: State-Wise Billing Bento Block (Spans 2 columns) */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <StatCard
+          label="Billing coverage"
+          icon={Gauge}
+          tone={coverage >= 95 ? 'emerald' : 'amber'}
+          footer={
             <div>
-              <h3 className="font-bold text-sm text-[#2d3e50] flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#eb8a23]" />
-                Geographic Territory Distribution
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">State and regional operations volume</p>
+              <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <motion.div
+                  className={`h-full origin-left rounded-full ${coverage >= 95 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: coverage / 100 }}
+                  transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                />
+              </div>
+              Billable share of non-cancelled cases
             </div>
-            <span className="text-[11px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded">
-              {stats.stateBreakdown.length} Territories
-            </span>
-          </div>
+          }
+        >
+          <AnimatedNumber value={coverage} digits={1} suffix="%" />
+        </StatCard>
+      </motion.div>
 
-          <div className="mt-3 space-y-3 max-h-52 overflow-y-auto pr-1">
-            {stats.stateBreakdown.map((st) => {
-              const percent = Math.round((st.amount / (maxStateAmount || 1)) * 100);
-              return (
-                <div key={st.state} className="text-xs">
-                  <div className="flex justify-between font-medium text-slate-700 mb-1">
-                    <span className="truncate">{st.state || 'Other State'}</span>
-                    <span className="font-bold text-[#2d3e50]">₹{st.amount.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-[#2d3e50] h-full rounded-full"
-                      style={{ width: `${percent}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
+      <motion.div variants={staggerParent} initial="hidden" animate="show" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Panel
+          title="Billing by client"
+          subtitle="Top clients by billed amount"
+          icon={Building2}
+          action={<span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{stats.topClients.length} clients</span>}
+        >
+          <div className="space-y-4">
+            {stats.topClients.slice(0, 6).map((c, i) => (
+              <BarRow
+                key={c.name}
+                label={c.name}
+                value={`₹${inr(c.amount)}`}
+                meta={`${inr(c.cases)} cases`}
+                percent={(c.amount / maxClient) * 100}
+                color={CLIENT_COLORS[i % CLIENT_COLORS.length]}
+                delay={i * 0.05}
+              />
+            ))}
           </div>
-        </div>
+        </Panel>
 
-        {/* Bento Tile 8: KM Slab Distribution Bento Block (Spans 2 columns) */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h3 className="font-bold text-sm text-[#2d3e50] flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#eb8a23]" />
-                KM Slab Utilization
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Flat vs distance tier breakdown</p>
+        <Panel
+          title="Needs review"
+          subtitle="Exceptions grouped by reason"
+          icon={AlertTriangle}
+          action={
+            stats.exceptionCases > 0 && (
+              <button onClick={() => onNavigateTab('records')} className={btn.ghost}>
+                Review <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )
+          }
+        >
+          {exceptionReasons.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center py-8 text-center">
+              <CheckCircle2 className="mb-2 h-8 w-8 text-emerald-500" />
+              <p className="text-sm font-semibold text-ink-900">Every case has a rate</p>
+              <p className="text-xs text-slate-500">No exceptions to resolve.</p>
             </div>
-            <span className="text-[11px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded">
-              {stats.slabBreakdown.length} Slabs Active
-            </span>
-          </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {exceptionReasons.map(([reason, count]) => (
+                <li key={reason} className="flex items-center justify-between gap-3 py-2.5 first:pt-0">
+                  <span className="flex min-w-0 items-center gap-2.5 text-sm text-slate-700">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400" />
+                    <span className="truncate" title={reason}>
+                      {reason}
+                    </span>
+                  </span>
+                  <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-amber-800">
+                    {inr(count)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {stats.slabBreakdown.map((sl) => (
+        <Panel
+          title="Billing by state"
+          subtitle="Regional distribution"
+          icon={MapPin}
+          bodyClassName="p-5 max-h-72 overflow-y-auto"
+        >
+          <div className="space-y-4">
+            {stats.stateBreakdown.map((s, i) => (
+              <BarRow
+                key={s.state}
+                label={s.state || 'Unassigned'}
+                value={`₹${inr(s.amount)}`}
+                meta={`${inr(s.count)} cases`}
+                percent={(s.amount / maxState) * 100}
+                delay={Math.min(i, 8) * 0.04}
+              />
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="KM slab usage" subtitle="Cases and billing per rate slab" icon={Layers}>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {stats.slabBreakdown.map((s) => (
               <div
-                key={sl.slab}
-                className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs flex items-center justify-between"
+                key={s.slab}
+                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3 transition-colors hover:border-slate-200 hover:bg-white"
               >
-                <div>
-                  <span className="font-bold text-slate-800 block truncate max-w-[120px]">{sl.slab || 'Standard'}</span>
-                  <span className="text-[10px] text-slate-400">{sl.count} cases</span>
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-ink-900">{s.slab || 'Standard'}</span>
+                  <span className="text-xs text-slate-500 tabular-nums">{inr(s.count)} cases</span>
                 </div>
-                <span className="font-black text-[#eb8a23] text-sm">
-                  ₹{sl.amount.toLocaleString('en-IN')}
-                </span>
+                <span className="text-sm font-bold tabular-nums text-brand-600">₹{inr(s.amount)}</span>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
+      </motion.div>
 
-        {/* Bento Tile 9: Recent Billing Records Table (Spans full 4 columns) */}
-        <div className="md:col-span-2 lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-sm text-[#2d3e50]">Recent Verified Billing Records</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Live case-level rate calculations and status</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                Live Verification
-              </span>
-              <button
-                onClick={() => onNavigateTab('records')}
-                className="text-xs font-bold text-[#eb8a23] hover:underline"
-              >
-                Open Full Grid ({allCases.length}) →
-              </button>
-            </div>
+      <motion.section variants={staggerChild} initial="hidden" animate="show" className="card overflow-hidden">
+        <header className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 className="text-sm font-semibold text-ink-900">Latest records</h3>
+            <p className="mt-0.5 text-xs text-slate-500">First rows of the current dataset</p>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
-                <tr>
-                  <th className="px-6 py-3">Client Application Number</th>
-                  <th className="px-6 py-3">Client Name</th>
-                  <th className="px-6 py-3">Applicant Name</th>
-                  <th className="px-6 py-3">KM / Slab</th>
-                  <th className="px-6 py-3 text-right">Billed Rate</th>
-                  <th className="px-6 py-3 text-center">Status</th>
-                  <th className="px-6 py-3 text-right">Action</th>
+          <button onClick={() => onNavigateTab('records')} className={btn.ghost}>
+            All {inr(allCases.length)} <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </header>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-slate-50/80 text-xs font-medium text-slate-500">
+              <tr>
+                <th className="px-5 py-2.5 font-medium">Application no.</th>
+                <th className="px-5 py-2.5 font-medium">Client</th>
+                <th className="px-5 py-2.5 font-medium">Applicant</th>
+                <th className="px-5 py-2.5 font-medium">KM · slab</th>
+                <th className="px-5 py-2.5 text-right font-medium">Amount</th>
+                <th className="px-5 py-2.5 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {recentCases.map((c) => (
+                <tr key={c.id} className="transition-colors hover:bg-slate-50/70">
+                  <td className="px-5 py-3 font-mono text-xs font-semibold text-ink-800">{c.clientApplicationNumber}</td>
+                  <td className="max-w-[220px] truncate px-5 py-3 text-slate-700">{c.clientDb}</td>
+                  <td className="max-w-[200px] truncate px-5 py-3 text-slate-600">{c.applicantName}</td>
+                  <td className="px-5 py-3 text-slate-600">
+                    <span className="tabular-nums">{c.kmUsedForBilling ?? '—'}</span>
+                    {c.slabApplied && <span className="ml-1.5 text-xs text-slate-400">{c.slabApplied}</span>}
+                  </td>
+                  <td className="px-5 py-3 text-right font-semibold tabular-nums text-ink-900">₹{inr(c.billingAmt)}</td>
+                  <td className="px-5 py-3">
+                    <StatusBadge status={statusOf(c)} />
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {recentCases.map((c) => (
-                  <tr key={c.clientApplicationNumber} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-3.5 font-mono font-bold text-[#2d3e50]">#{c.clientApplicationNumber}</td>
-                    <td className="px-6 py-3.5 font-semibold text-slate-800">{c.clientDb || c.clientRaw}</td>
-                    <td className="px-6 py-3.5 text-slate-600">{c.applicantName}</td>
-                    <td className="px-6 py-3.5">
-                      <span className="font-mono text-slate-700 font-bold">{c.kmUsedForBilling} KM</span>
-                      <span className="text-slate-400 text-[10px] ml-1">({c.slabApplied})</span>
-                    </td>
-                    <td className="px-6 py-3.5 text-right font-black text-[#2d3e50]">
-                      ₹{c.billingAmt.toLocaleString('en-IN')}
-                    </td>
-                    <td className="px-6 py-3.5 text-center">
-                      {c.isCancelled ? (
-                        <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                          Cancelled
-                        </span>
-                      ) : c.isLeftover ? (
-                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                          Leftover
-                        </span>
-                      ) : c.isBillable ? (
-                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                          Billable
-                        </span>
-                      ) : (
-                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                          Exception
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3.5 text-right">
-                      <button
-                        onClick={() => onNavigateTab('records')}
-                        className="text-[#eb8a23] font-bold text-xs hover:underline cursor-pointer"
-                      >
-                        Edit
-                      </button>
-                      <span className="mx-2 text-slate-300">|</span>
-                      <button
-                        onClick={() => onNavigateTab('records')}
-                        className="text-[#2d3e50] font-bold text-xs hover:underline cursor-pointer"
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      </motion.section>
     </div>
   );
 };
-

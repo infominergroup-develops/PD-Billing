@@ -1,5 +1,8 @@
 import * as XLSX from 'xlsx';
 import { RateRule, CaseRecord, ColumnMappingConfig, DashboardStats } from '../types';
+import { ROW_ID_KEY, isDeletionMarked, withRowIds } from './excelParser';
+
+export { detectColumnNames } from './excelParser';
 
 export function norm(s: string | null | undefined): string {
   return String(s || '').trim().toLowerCase();
@@ -9,52 +12,50 @@ export function strictNorm(s: string | null | undefined): string {
   return String(s || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+/**
+ * Read a numeric value from a cell. Numeric cells pass through; text like "1,234", "12.5 km"
+ * or "₹ 450" yields the first number in it. Blank or non-numeric text → null.
+ */
 export function parseKM(v: any): number | null {
   if (v === null || v === undefined || v === '') return null;
-  const n = parseFloat(String(v).replace(/[^0-9.]/g, ''));
-  return isNaN(n) ? null : n;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const m = String(v).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : null;
 }
 
-export function detectColumnNames(sampleRow: Record<string, any>): ColumnMappingConfig {
-  const sampleKeys = Object.keys(sampleRow);
-  const keyMap: Record<string, string> = {};
-  sampleKeys.forEach((k) => {
-    keyMap[k.toLowerCase().replace(/[\s_]/g, '')] = k;
-  });
-
-  return {
-    colClientApplicationNumber: keyMap['clientapplicationnumber'] || keyMap['applicationnumber'] || keyMap['appno'] || keyMap['caseid'] || keyMap['caseno'] || keyMap['id'] || null,
-    colClient: keyMap['clientname'] || keyMap['client_name'] || keyMap['client'] || null,
-    colKM: keyMap['kmrunningoneside'] || keyMap['km_running_one_side'] || keyMap['kmoneside'] || keyMap['km'] || keyMap['distance'] || keyMap['totalkm'] || keyMap['runningkm'] || null,
-    colKMFed: keyMap['kmfeededbymis'] || keyMap['km_feeded_by_mis'] || null,
-    colKMUsed: keyMap['kmusedforbilling'] || keyMap['kmused'] || keyMap['billingkm'] || null,
-    colStatus: keyMap['casestatus'] || keyMap['case_status'] || keyMap['status'] || null,
-    colCity: keyMap['cityname'] || keyMap['city_name'] || keyMap['city'] || null,
-    colState: keyMap['state'] || keyMap['statename'] || keyMap['state_name'] || null,
-    colProduct: keyMap['productname'] || keyMap['product_name'] || keyMap['product'] || null,
-    colActivity: keyMap['activitytypes'] || keyMap['activity_types'] || keyMap['activitytype'] || null,
-    colApplicant: keyMap['applicantname'] || keyMap['applicant_name'] || keyMap['applicant'] || null,
-    colAppNo: keyMap['clientapplicationnumber'] || keyMap['client_application_number'] || keyMap['appno'] || null,
-    colVerifier: keyMap['verifiername'] || keyMap['verifier_name'] || keyMap['verifier'] || null,
-    colRecDate: keyMap['casereceiveddate'] || keyMap['case_received_date'] || keyMap['receiveddate'] || null,
-    colApptDate: keyMap['appointmentdate'] || keyMap['appointment_date'] || null,
-    colCloseDate: keyMap['casecloseddate'] || keyMap['case_closed_date'] || keyMap['closeddate'] || null,
-    colTAT: keyMap['tatreceiveddays'] || keyMap['tat_received_days'] || keyMap['tat'] || null,
-    colFinalSt: keyMap['finalstatus'] || keyMap['final_status'] || null,
-    colLoanAmt: keyMap['appliedloanamt'] || keyMap['applied_loan_amt'] || keyMap['loanamount'] || null,
-    colBranch: keyMap['branchname'] || keyMap['branch_name'] || keyMap['branch'] || null,
-    colActivityNm: keyMap['activityname'] || keyMap['activity_name'] || null,
-    colDeletionDate: keyMap['deletiondate'] || keyMap['deletion_date'] || null,
-  };
+/** Round to paise so float sums never drift (0.1 + 0.2 style errors). */
+export function roundMoney(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-export function deduplicateRawRows(
-  rows: Record<string, any>[],
+export function getRowId(r: Record<string, any>, fallbackIdx: number): string {
+  return r[ROW_ID_KEY] ? String(r[ROW_ID_KEY]) : `r${fallbackIdx + 1}`;
+}
+
+/**
+ * Older saved state keyed overrides by application number, which applied one edit to every
+ * activity row of that application. Re-key them by row id (same effective result for the
+ * stored data, but future edits only touch one row) and give legacy rows ids.
+ */
+export function migrateLegacyState(
+  rawCases: Record<string, any>[],
+  overrides: Record<string, { rate: number; reason: string }>,
   cols: ColumnMappingConfig
-): Record<string, any>[] {
-  // To ensure all rows from Excel are accurately read without dropping any
-  // cases (even if Client Application Number is repeated), we skip deduplication
-  return rows.map((r, idx) => ({ ...r, _rawRowIdx: idx }));
+): { rawCases: Record<string, any>[]; overrides: Record<string, { rate: number; reason: string }> } {
+  const rows = withRowIds(rawCases);
+  const rowIds = new Set(rows.map((r) => r[ROW_ID_KEY]));
+  const next: Record<string, { rate: number; reason: string }> = {};
+  Object.entries(overrides).forEach(([key, val]) => {
+    if (rowIds.has(key)) {
+      next[key] = val;
+      return;
+    }
+    rows.forEach((r) => {
+      const appNo = cols.colClientApplicationNumber ? r[cols.colClientApplicationNumber] : null;
+      if (appNo !== null && appNo !== undefined && String(appNo).trim() === key) next[r[ROW_ID_KEY]] = val;
+    });
+  });
+  return { rawCases: rows, overrides: next };
 }
 
 export function lookupRate(
@@ -151,30 +152,44 @@ export function processCaseRecords(
 
   const getCol = (r: Record<string, any>, col: string | null) => (col && r[col] !== undefined ? r[col] : null);
 
-  // 1. Map all cases first
-  const initialCases = rawCases.map((r, idx) => {
+  // Client resolution is the same for every row of a client; resolve once per name.
+  const clientCache = new Map<string, string>();
+  const resolveRateSheetClient = (clientDb: string): string => {
+    const cached = clientCache.get(clientDb);
+    if (cached !== undefined) return cached;
+    let resolved = clientMap[clientDb] || '';
+    if (!resolved) {
+      const cNorm = strictNorm(clientDb);
+      const mappedKey = Object.keys(clientMap).find((k) => strictNorm(k) === cNorm);
+      if (mappedKey) resolved = clientMap[mappedKey];
+      if (!resolved) {
+        const directMatch = rates.find((rt) => {
+          const rNorm = strictNorm(rt.client);
+          return rNorm === cNorm || (rNorm.length > 3 && cNorm.length > 3 && (rNorm.includes(cNorm) || cNorm.includes(rNorm)));
+        });
+        if (directMatch) resolved = directMatch.client;
+      }
+    }
+    clientCache.set(clientDb, resolved);
+    return resolved;
+  };
+
+  // 1. Drop rows whose deletion-date column holds a real value (not "-", "NA", blank…)
+  const activeRows = cols.colDeletionDate
+    ? rawCases.filter((r) => !isDeletionMarked(getCol(r, cols.colDeletionDate)))
+    : rawCases;
+  const deletedRows = rawCases.length - activeRows.length;
+
+  // 2. One case per remaining row
+  const initialCases = activeRows.map((r, idx) => {
+    const rowId = getRowId(r, idx);
     const rawCaseId = getCol(r, cols.colClientApplicationNumber);
     const clientApplicationNumber = rawCaseId !== null && rawCaseId !== undefined && String(rawCaseId).trim() !== ''
       ? String(rawCaseId).trim()
       : `CASE-${idx + 1}`;
 
     const clientDb = String(getCol(r, cols.colClient) || '').trim();
-    
-    // Robust Mapping Lookup
-    let rateSheetClient = clientMap[clientDb] || '';
-    if (!rateSheetClient) {
-      const cNorm = strictNorm(clientDb);
-      const mappedKey = Object.keys(clientMap).find(k => strictNorm(k) === cNorm);
-      if (mappedKey) rateSheetClient = clientMap[mappedKey];
-      
-      if (!rateSheetClient) {
-        const directMatch = rates.find(rt => {
-          const rNorm = strictNorm(rt.client);
-          return rNorm === cNorm || (rNorm.length > 3 && cNorm.length > 3 && (rNorm.includes(cNorm) || cNorm.includes(rNorm)));
-        });
-        if (directMatch) rateSheetClient = directMatch.client;
-      }
-    }
+    const rateSheetClient = resolveRateSheetClient(clientDb);
     const state = String(getCol(r, cols.colState) || '').trim();
     const branch = String(getCol(r, cols.colBranch) || '').trim();
     const city = String(getCol(r, cols.colCity) || '').trim();
@@ -199,7 +214,7 @@ export function processCaseRecords(
     let overrideReason = '';
     let isLeftover = !!r._isLeftover;
 
-    const override = existingOverrides?.get(clientApplicationNumber);
+    const override = existingOverrides?.get(rowId);
 
     if (override) {
       billingRate = override.rate;
@@ -230,7 +245,8 @@ export function processCaseRecords(
     }
 
     const record: CaseRecord = {
-      id: `case_${clientApplicationNumber}_${idx}`,
+      id: `case_${rowId}`,
+      rowId,
       clientApplicationNumber,
       clientAppNo: String(getCol(r, cols.colAppNo) || ''),
       applicantName: String(getCol(r, cols.colApplicant) || 'Unnamed Applicant'),
@@ -270,16 +286,8 @@ export function processCaseRecords(
     return record;
   });
 
-  // 2. Filter and sort
-  let filteredCases = initialCases;
-
-  if (cols.colDeletionDate) {
-    // Keep active cases (where deletion date is EMPTY)
-    filteredCases = initialCases.filter(c => !c.deletionDate || c.deletionDate.trim() === '');
-  }
-
-  // 3. Populate final arrays (No deduplication as requested)
-  filteredCases.forEach(record => {
+  // 3. Bucket
+  initialCases.forEach((record) => {
     allCases.push(record);
     if (record.isCancelled) {
       cancelled.push(record);
@@ -291,7 +299,7 @@ export function processCaseRecords(
   });
 
   // Calculate Dashboard Statistics
-  const totalBillingAmt = billable.reduce((sum, c) => sum + c.billingAmt, 0);
+  const totalBillingAmt = roundMoney(billable.reduce((sum, c) => sum + c.billingAmt, 0));
   const avgBillingPerCase = billable.length ? Math.round(totalBillingAmt / billable.length) : 0;
 
   // Group by client
@@ -303,7 +311,7 @@ export function processCaseRecords(
     clientAgg[k].amount += c.billingAmt;
   });
   const topClients = Object.entries(clientAgg)
-    .map(([name, data]) => ({ name, cases: data.cases, amount: data.amount }))
+    .map(([name, data]) => ({ name, cases: data.cases, amount: roundMoney(data.amount) }))
     .sort((a, b) => b.amount - a.amount);
 
   // Group by state
@@ -315,7 +323,7 @@ export function processCaseRecords(
     stateAgg[k].amount += c.billingAmt;
   });
   const stateBreakdown = Object.entries(stateAgg)
-    .map(([state, data]) => ({ state, count: data.count, amount: data.amount }))
+    .map(([state, data]) => ({ state, count: data.count, amount: roundMoney(data.amount) }))
     .sort((a, b) => b.amount - a.amount);
 
   // Group by product
@@ -327,7 +335,7 @@ export function processCaseRecords(
     prodAgg[k].amount += c.billingAmt;
   });
   const productBreakdown = Object.entries(prodAgg)
-    .map(([product, data]) => ({ product, count: data.count, amount: data.amount }))
+    .map(([product, data]) => ({ product, count: data.count, amount: roundMoney(data.amount) }))
     .sort((a, b) => b.amount - a.amount);
 
   // Group by slab
@@ -339,7 +347,7 @@ export function processCaseRecords(
     slabAgg[k].amount += c.billingAmt;
   });
   const slabBreakdown = Object.entries(slabAgg)
-    .map(([slab, data]) => ({ slab, count: data.count, amount: data.amount }))
+    .map(([slab, data]) => ({ slab, count: data.count, amount: roundMoney(data.amount) }))
     .sort((a, b) => b.amount - a.amount);
 
   // Status breakdown
@@ -355,6 +363,7 @@ export function processCaseRecords(
 
   const stats: DashboardStats = {
     totalCases: allCases.length,
+    deletedRows,
     billableCases: billable.length,
     totalBillingAmt,
     exceptionCases: exceptions.length,
@@ -479,7 +488,7 @@ export function generateSummaryData(
       'Billable Cases': v.billable,
       Exceptions: v.exceptions,
       'Cancelled / Not Billed': v.cancelled,
-      'Total Billing (₹)': v.amount,
+      'Total Billing (₹)': roundMoney(v.amount),
       'Avg Rate (₹)': v.billable ? Math.round(v.amount / v.billable) : 0,
     }));
 
@@ -494,7 +503,7 @@ export function generateSummaryData(
     'Billable Cases': grandBillable,
     Exceptions: grandExceptions,
     'Cancelled / Not Billed': grandCancelled,
-    'Total Billing (₹)': grandTotal,
+    'Total Billing (₹)': roundMoney(grandTotal),
     'Avg Rate (₹)': grandBillable ? Math.round(grandTotal / grandBillable) : 0,
   });
 

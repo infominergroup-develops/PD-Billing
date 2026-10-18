@@ -1,1 +1,193 @@
 @import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+/* ═══════════════════════════════════════════════════════════════
+   INFOMINER DESIGN SYSTEM
+   Colours come from the logo (amber #F2B544 · orange #E86B2E · navy #364C63).
+   Orange text/buttons use the 600 step (#C2541A, 4.6:1 on white) — the logo
+   orange itself is only 3.2:1, so it is reserved for decoration & large accents.
+   ═══════════════════════════════════════════════════════════════ */
+@theme {
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+
+  /* Brand navy — primary ink */
+  --color-ink: #364c63;
+  --color-ink-50: #f3f6f9;
+  --color-ink-100: #e4eaf0;
+  --color-ink-200: #c9d4df;
+  --color-ink-300: #9fb1c3;
+  --color-ink-400: #6f879f;
+  --color-ink-500: #4f6680;
+  --color-ink-600: #364c63;
+  --color-ink-700: #2b3d50;
+  --color-ink-800: #22303f;
+  --color-ink-900: #1a2531;
+  --color-ink-950: #111923;
+
+  /* Brand orange */
+  --color-brand-50: #fef5ef;
+  --color-brand-100: #fde7d8;
+  --color-brand-200: #facaae;
+  --color-brand-300: #f5a57a;
+  --color-brand-400: #ef8550;
+  --color-brand-500: #e86b2e;
+  --color-brand-600: #c2541a;
+  --color-brand-700: #a3441a;
+  --color-brand-800: #82381a;
+  --color-brand-900: #6a3018;
+
+  /* Existing orange-* utilities follow the brand hue */
+  --color-orange-50: #fef5ef;
+  --color-orange-100: #fde7d8;
+  --color-orange-200: #facaae;
+  --color-orange-300: #f5a57a;
+  --color-orange-400: #ef8550;
+  --color-orange-500: #e86b2e;
+  --color-orange-600: #c2541a;
+  --color-orange-700: #a3441a;
+  --color-orange-800: #82381a;
+  --color-orange-900: #6a3018;
+
+  --color-sun: #f2b544; /* logo amber */
+  --color-canvas: #f6f7f9;
+
+  /* Elevation — soft, layered, slightly navy-tinted */
+  --shadow-xs: 0 1px 2px rgb(17 25 35 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(17 25 35 / 0.06), 0 1px 3px rgb(17 25 35 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(17 25 35 / 0.08), 0 2px 4px -2px rgb(17 25 35 / 0.05);
+  --shadow-lg: 0 12px 32px -8px rgb(17 25 35 / 0.14), 0 4px 8px -4px rgb(17 25 35 / 0.06);
+  --shadow-xl: 0 24px 48px -12px rgb(17 25 35 / 0.18);
+
+  /* Motion tokens: decelerate on enter, accelerate on exit */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-float: float 6s var(--ease-out) infinite alternate;
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes float {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(0, -12px, 0); }
+  }
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  body {
+    @apply bg-canvas text-slate-800 font-sans;
+  }
+  ::selection {
+    background: rgb(232 107 46 / 0.2);
+    color: var(--color-ink-900);
+  }
+  /* Visible, consistent keyboard focus everywhere */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+  /* Tabular figures for money and counts */
+  .tabular-nums,
+  td,
+  th {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Thin, quiet scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-200) transparent;
+  }
+}
+
+/* ─── Entrance animations (replaces the missing tailwindcss-animate plugin) ─── */
+@keyframes enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+      scale(var(--tw-enter-scale, 1));
+  }
+}
+@utility animate-in {
+  animation: enter 320ms var(--ease-out) both;
+}
+@utility fade-in {
+  --tw-enter-opacity: 0;
+  --tw-enter-translate-y: 6px;
+}
+@utility zoom-in-95 {
+  --tw-enter-scale: 0.96;
+}
+@utility slide-in-from-top-2 {
+  --tw-enter-translate-y: -0.5rem;
+}
+
+/* ─── Reusable surfaces ───────────────────────────────────────── */
+@utility card {
+  @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm;
+}
+@utility card-hover {
+  transition: box-shadow 220ms var(--ease-out), transform 220ms var(--ease-out), border-color 220ms var(--ease-out);
+  &:hover {
+    @apply shadow-md border-slate-300/80;
+    transform: translateY(-2px);
+  }
+}
+@utility skeleton {
+  background: linear-gradient(90deg, var(--color-ink-50) 0%, var(--color-ink-100) 50%, var(--color-ink-50) 100%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Buttons get a tactile press everywhere */
+@layer components {
+  button:not(:disabled):active {
+    transform: translateY(0.5px) scale(0.985);
+  }
+  button {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 160ms;
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+/* ─── Respect reduced-motion preferences ─────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+}

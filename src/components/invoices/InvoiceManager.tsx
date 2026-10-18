@@ -133,16 +133,16 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
   };
 
   return (
-    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="invoices-container">
+    <div className="space-y-6 w-full mx-auto" id="invoices-container">
       {/* Top Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm print:hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-[#2d3e50] text-white flex items-center justify-center text-xs font-black">
+              <span className="w-6 h-6 rounded-lg bg-brand-600 text-white shadow-sm flex items-center justify-center text-xs font-bold">
                 6
               </span>
-              <h1 className="text-xl font-black text-[#2d3e50]">GST Tax Invoice Generator</h1>
+              <h1 className="text-xl font-bold text-ink">GST Tax Invoice Generator</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1">
               Generate branded tax invoices with company logo, GST calculations (CGST/SGST/IGST), bank credentials, and case-level annexures.
@@ -157,7 +157,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                 setSelectedClientForNew(e.target.value);
                 setSelectedBranchForNew(''); // reset branch when client changes
               }}
-              className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#eb8a23]"
+              className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold focus:outline-none focus:border-brand-500"
             >
               <option value="">— Select Client for Invoice —</option>
               {uniqueBillableClients.map((c) => (
@@ -171,7 +171,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
               <select
                 value={selectedBranchForNew}
                 onChange={(e) => setSelectedBranchForNew(e.target.value)}
-                className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#eb8a23]"
+                className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold focus:outline-none focus:border-brand-500"
               >
                 <option value="">All Branches</option>
                 {availableBranchesForClient.map((b) => (
@@ -194,7 +194,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
             <button
               onClick={() => selectedClientForNew && handleGenerateInvoice(selectedClientForNew)}
               disabled={!selectedClientForNew}
-              className="inline-flex items-center gap-1.5 bg-[#eb8a23] hover:bg-[#d97917] disabled:opacity-40 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer disabled:cursor-not-allowed shadow"
+              className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer disabled:cursor-not-allowed shadow"
               id="create-invoice-btn"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -209,8 +209,8 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
         {/* Invoices List Sidebar */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm print:hidden">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-[#2d3e50] flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-[#eb8a23]" />
+            <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-brand-600" />
               Generated Invoices ({invoices.length})
             </h2>
           </div>
@@ -229,12 +229,12 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                     onClick={() => setSelectedInvoice(inv)}
                     className={`p-3.5 rounded-xl border transition cursor-pointer ${
                       isSelected
-                        ? 'border-[#eb8a23] bg-orange-50/40 shadow-xs'
+                        ? 'border-brand-500 bg-orange-50/40 shadow-xs'
                         : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[#2d3e50]">
+                      <span className="font-mono text-xs font-bold text-ink">
                         {inv.invoiceNumber}
                       </span>
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
@@ -248,7 +248,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-[11px]">
                       <span className="text-slate-500">{inv.items.length} cases</span>
-                      <span className="font-black text-[#2d3e50]">
+                      <span className="font-bold text-ink">
                         ₹{inv.grandTotal.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -266,7 +266,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
               {/* Toolbar */}
               <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm print:hidden">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-xs text-[#2d3e50]">
+                  <span className="font-mono font-bold text-xs text-ink">
                     {selectedInvoice.invoiceNumber}
                   </span>
                   <span className="text-xs text-slate-400">•</span>
@@ -278,10 +278,10 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handlePrint}
-                    className="inline-flex items-center gap-1.5 bg-[#2d3e50] hover:bg-[#1e293b] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow"
+                    className="inline-flex items-center gap-1.5 bg-ink hover:bg-ink-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow"
                     id="print-invoice-btn"
                   >
-                    <Printer className="w-3.5 h-3.5 text-[#eb8a23]" />
+                    <Printer className="w-3.5 h-3.5 text-brand-600" />
                     <span>Print / Save PDF</span>
                   </button>
 
@@ -306,7 +306,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                 id="printable-tax-invoice"
               >
                 {/* Header with Infominer Logo */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b-2 border-[#2d3e50]">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b-2 border-ink">
                   <div>
                     <InfominerLogo size="lg" variant="dark" showTagline />
                     <div className="mt-3 text-xs text-slate-600 space-y-0.5">
@@ -319,13 +319,13 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                   </div>
 
                   <div className="text-right sm:self-start">
-                    <span className="inline-block px-3 py-1 rounded bg-[#2d3e50] text-white text-xs font-black tracking-widest uppercase">
+                    <span className="inline-block px-3 py-1 rounded bg-ink text-white text-xs font-bold tracking-widest uppercase">
                       TAX INVOICE
                     </span>
                     <div className="mt-3 text-xs space-y-1">
                       <div>
                         <span className="text-slate-500 font-semibold">Invoice No:</span>{' '}
-                        <span className="font-mono font-bold text-[#2d3e50]">{selectedInvoice.invoiceNumber}</span>
+                        <span className="font-mono font-bold text-ink">{selectedInvoice.invoiceNumber}</span>
                       </div>
                       <div>
                         <span className="text-slate-500 font-semibold">Invoice Date:</span>{' '}
@@ -346,10 +346,10 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                 {/* Billed To Details */}
                 <div className="grid grid-cols-2 gap-6 my-6 p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                   <div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">
                       Billed To Client
                     </span>
-                    <div className="font-black text-sm text-[#2d3e50]">{selectedInvoice.clientName}</div>
+                    <div className="font-bold text-sm text-ink">{selectedInvoice.clientName}</div>
                     <div className="text-slate-600 mt-1 space-y-0.5">
                       <p>Branch / Operational Division: Regional Operations</p>
                       <p>Place of Supply: {selectedInvoice.clientState || 'Delhi / NCR'}</p>
@@ -357,7 +357,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">
                       Service Description
                     </span>
                     <div className="font-bold text-slate-800">
@@ -372,7 +372,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                 {/* Line Items Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-[#2d3e50] text-white font-bold">
+                    <thead className="bg-ink text-white font-bold">
                       <tr>
                         <th className="p-2.5">#</th>
                         <th className="p-2.5">Client Application Number</th>
@@ -387,12 +387,12 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                       {selectedInvoice.items.map((item, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">
                           <td className="p-2.5 text-slate-400 font-mono">{idx + 1}</td>
-                          <td className="p-2.5 font-mono font-bold text-[#2d3e50]">{item.clientApplicationNumber}</td>
+                          <td className="p-2.5 font-mono font-bold text-ink">{item.clientApplicationNumber}</td>
                           <td className="p-2.5 font-semibold text-slate-800">{item.applicantName}</td>
                           <td className="p-2.5 text-slate-600">{item.branch} ({item.city || '—'})</td>
-                          <td className="p-2.5 text-center font-bold text-[#eb8a23]">{item.slab}</td>
+                          <td className="p-2.5 text-center font-bold text-brand-600">{item.slab}</td>
                           <td className="p-2.5 text-right font-medium">₹{item.rate.toLocaleString('en-IN')}</td>
-                          <td className="p-2.5 text-right font-bold text-[#2d3e50]">
+                          <td className="p-2.5 text-right font-bold text-ink">
                             ₹{item.amount.toLocaleString('en-IN')}
                           </td>
                         </tr>
@@ -404,7 +404,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                 {/* Calculation Totals */}
                 <div className="mt-6 pt-4 border-t-2 border-slate-200 flex flex-col sm:flex-row justify-between items-start gap-6">
                   <div className="max-w-xs text-xs text-slate-600 space-y-1.5">
-                    <span className="font-bold text-[#2d3e50] block mb-1">Bank Payment Details:</span>
+                    <span className="font-bold text-ink block mb-1">Bank Payment Details:</span>
                     <p><strong>Bank:</strong> {companyProfile.bankName}</p>
                     <p><strong>A/C No:</strong> <span className="font-mono">{companyProfile.bankAccountNo}</span></p>
                     <p><strong>IFSC:</strong> <span className="font-mono">{companyProfile.bankIfsc}</span></p>
@@ -435,9 +435,9 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
                       </div>
                     )}
 
-                    <div className="flex justify-between py-2 border-t-2 border-[#2d3e50] text-sm font-black text-[#2d3e50]">
+                    <div className="flex justify-between py-2 border-t-2 border-ink text-sm font-bold text-ink">
                       <span>Grand Total:</span>
-                      <span className="text-[#eb8a23]">₹{selectedInvoice.grandTotal.toLocaleString('en-IN')}</span>
+                      <span className="text-brand-600">₹{selectedInvoice.grandTotal.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export const InvoiceManager: React.FC<InvoiceManagerProps> = ({
           ) : (
             <div className="bg-white rounded-2xl p-12 border border-slate-200 shadow-sm text-center">
               <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-[#2d3e50]">No Invoice Selected</h3>
+              <h3 className="text-base font-bold text-ink">No Invoice Selected</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                 Select an existing invoice from the left panel or generate a new invoice using the client dropdown above.
               </p>

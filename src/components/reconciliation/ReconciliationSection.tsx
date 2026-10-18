@@ -105,7 +105,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
   };
 
   return (
-    <div className="w-full mx-auto space-y-6 animate-in fade-in duration-200" id="reconciliation-panel">
+    <div className="w-full mx-auto space-y-6" id="reconciliation-panel">
       {/* Header */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
             <Scale className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-[#2d3e50]">Client Reconciliation &amp; Settlements</h1>
+            <h1 className="text-xl font-bold text-ink">Client Reconciliation &amp; Settlements</h1>
             <p className="text-xs text-slate-500 mt-1">
               Track discrepancies between system-generated billing numbers and client-reported numbers.
             </p>
@@ -125,8 +125,8 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
         {/* Entry Form */}
         <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col gap-5">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Calculator className="w-4 h-4 text-[#eb8a23]" />
-            <h2 className="font-bold text-sm text-[#2d3e50]">New Reconciliation Record</h2>
+            <Calculator className="w-4 h-4 text-brand-600" />
+            <h2 className="font-bold text-sm text-ink">New Reconciliation Record</h2>
           </div>
 
           <div className="space-y-4">
@@ -135,7 +135,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
               <select
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#eb8a23] bg-white"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 bg-white"
               >
                 {uniqueClients.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -147,18 +147,18 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#eb8a23]"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500"
               />
             </div>
 
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 font-semibold">System Cases:</span>
-                <span className="font-black text-[#2d3e50]">{systemData.cases}</span>
+                <span className="font-bold text-ink">{systemData.cases}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 font-semibold">System Amount:</span>
-                <span className="font-black text-[#2d3e50]">₹{systemData.amount.toLocaleString('en-IN')}</span>
+                <span className="font-bold text-ink">₹{systemData.amount.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -170,7 +170,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
                   value={clientCases}
                   onChange={(e) => setClientCases(e.target.value)}
                   placeholder="e.g. 90"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#eb8a23]"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500"
                 />
               </div>
               <div>
@@ -180,7 +180,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
                   value={clientAmount}
                   onChange={(e) => setClientAmount(e.target.value)}
                   placeholder="e.g. 150000"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#eb8a23]"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500"
                 />
               </div>
             </div>
@@ -203,16 +203,16 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
                 onChange={(e) => setRemarks(e.target.value)}
                 placeholder="Reason for deduction/excess..."
                 rows={2}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#eb8a23] resize-none"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 resize-none"
               />
             </div>
 
             <button
               onClick={handleSave}
               disabled={!clientCases && !clientAmount}
-              className="w-full inline-flex items-center justify-center gap-2 bg-[#2d3e50] hover:bg-[#1a2530] text-white px-4 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-50"
+              className="w-full inline-flex items-center justify-center gap-2 bg-ink hover:bg-ink-950 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-50"
             >
-              <Save className="w-4 h-4 text-[#eb8a23]" />
+              <Save className="w-4 h-4 text-brand-600" />
               Save Record
             </button>
           </div>
@@ -221,7 +221,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
         {/* History Table */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[#2d3e50]">Historical Discrepancy Ledger</h3>
+            <h3 className="text-sm font-bold text-ink">Historical Discrepancy Ledger</h3>
             <span className="text-xs font-bold bg-white border border-slate-200 px-2 py-1 rounded text-slate-500">
               {reconciliations.length} Records
             </span>
@@ -252,7 +252,7 @@ export const ReconciliationSection: React.FC<ReconciliationSectionProps> = ({
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         {rec.month}
                       </td>
-                      <td className="p-3 font-bold text-[#2d3e50] max-w-[140px] truncate" title={rec.clientId}>
+                      <td className="p-3 font-bold text-ink max-w-[140px] truncate" title={rec.clientId}>
                         {rec.clientId}
                       </td>
                       <td className="p-3 text-center font-mono text-slate-500">

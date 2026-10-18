@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { InfominerLogo } from './InfominerLogo';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -7,11 +8,9 @@ import {
   GitFork,
   FileSpreadsheet,
   BarChart3,
-  Receipt,
   Download,
   History,
   BookOpen,
-  User,
   LogOut,
   ShieldCheck,
   ChevronDown,
@@ -19,7 +18,6 @@ import {
   Mail,
   Scale,
 } from 'lucide-react';
-import { UserRole } from '../../types';
 
 export type ActiveTab =
   | 'upload'
@@ -44,6 +42,17 @@ interface NavbarProps {
   onLoadSampleData: () => void;
 }
 
+type NavItem = {
+  id: ActiveTab;
+  label: string;
+  step?: number;
+  icon: React.FC<{ className?: string }>;
+  badge?: string;
+  badgeTone?: 'neutral' | 'warn';
+};
+
+const inr = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
@@ -53,148 +62,212 @@ export const Navbar: React.FC<NavbarProps> = ({
   fileName,
   onLoadSampleData,
 }) => {
-  const { user, logout, switchUser } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const navItems: { id: ActiveTab; label: string; icon: React.FC<{ className?: string }>; badge?: string | number; badgeColor?: string }[] = [
-    { id: 'upload', label: '1. Upload Data', icon: Upload, badge: totalCases ? `${totalCases}` : undefined },
-    { id: 'analytics', label: '2. Live Dashboard', icon: BarChart3 },
-    { id: 'records', label: '3. Case Records', icon: FileSpreadsheet, badge: exceptionCount > 0 ? `${exceptionCount} exp` : undefined, badgeColor: 'bg-amber-500 text-white' },
-    { id: 'mapping', label: '4. Client Mapping', icon: GitFork },
-    { id: 'rates', label: '5. Rate Sheet', icon: TableProperties },
-    { id: 'reconciliation', label: '6. Settlements', icon: Scale },
-    { id: 'emails', label: '7. Draft Emails', icon: Mail },
-    { id: 'reports', label: '8. Export Reports', icon: Download },
-    { id: 'audit', label: '9. Audit Trail', icon: History },
-    { id: 'docs', label: 'Help & Docs', icon: BookOpen },
+  // Close the account menu on outside click or Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  const navItems: NavItem[] = [
+    { id: 'upload', step: 1, label: 'Upload', icon: Upload, badge: totalCases ? inr(totalCases) : undefined },
+    { id: 'analytics', step: 2, label: 'Dashboard', icon: BarChart3 },
+    {
+      id: 'records',
+      step: 3,
+      label: 'Case Records',
+      icon: FileSpreadsheet,
+      badge: exceptionCount > 0 ? `${inr(exceptionCount)} exc` : undefined,
+      badgeTone: 'warn',
+    },
+    { id: 'mapping', step: 4, label: 'Client Mapping', icon: GitFork },
+    { id: 'rates', step: 5, label: 'Rate Sheet', icon: TableProperties },
+    { id: 'reconciliation', step: 6, label: 'Settlements', icon: Scale },
+    { id: 'emails', step: 7, label: 'Emails', icon: Mail },
+    { id: 'reports', step: 8, label: 'Reports', icon: Download },
+    { id: 'audit', step: 9, label: 'Audit Trail', icon: History },
+    { id: 'docs', label: 'Help', icon: BookOpen },
   ];
 
+  const initials = (user?.name || 'U')
+    .split(/\s+/)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
   return (
-    <header className="bg-[#2d3e50] text-white shadow-md sticky top-0 z-40 border-b border-[#1e293b] print:hidden" id="main-header">
-      {/* Top Utility Bar */}
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 border-b border-[#1e293b]/80">
-          {/* Brand Logo & System Status */}
-          <div className="flex items-center gap-6">
-            <div className="cursor-pointer" onClick={() => setActiveTab('analytics')}>
-              <InfominerLogo size="md" variant="light" showTagline={true} />
-            </div>
+    <header
+      className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl backdrop-saturate-150 print:hidden"
+      id="main-header"
+    >
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
+        {/* Top bar */}
+        <div className="flex h-16 items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-5">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className="shrink-0 rounded-lg"
+              aria-label="Go to dashboard"
+            >
+              <InfominerLogo size="md" showTagline />
+            </button>
 
-            <div className="hidden lg:flex items-center gap-2 text-slate-300 text-xs bg-[#1e293b]/70 px-3 py-1.5 rounded-xl border border-[#1e293b]">
-              <div className="w-2 h-2 rounded-full bg-[#eb8a23] animate-pulse"></div>
-              <span className="font-medium">System Automated</span>
-              {fileName && (
-                <>
-                  <span className="text-slate-500">•</span>
-                  <span className="font-mono text-slate-300 truncate max-w-[160px]">{fileName}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Metrics & User Profile */}
-          <div className="flex items-center gap-3">
-            {totalCases > 0 && (
-              <div className="hidden md:flex items-center gap-4 bg-[#1e293b] px-3.5 py-1.5 rounded-xl border border-[#1e293b]">
-                <div className="text-right">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Total Revenue</div>
-                  <div className="text-sm font-black text-[#eb8a23]">₹{totalBilled.toLocaleString('en-IN')}</div>
-                </div>
-                <div className="w-px h-6 bg-slate-700/60"></div>
-                <div className="text-right">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Cases</div>
-                  <div className="text-sm font-bold text-white">{totalCases.toLocaleString('en-IN')}</div>
-                </div>
+            {fileName && totalCases > 0 && (
+              <div className="hidden min-w-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 shadow-xs lg:flex">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                <span className="truncate font-medium max-w-[220px]" title={fileName}>
+                  {fileName}
+                </span>
               </div>
             )}
+          </div>
 
-            {/* Quick Demo Loader */}
-            {totalCases === 0 && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            {totalCases > 0 ? (
+              <div className="hidden items-center divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white shadow-xs md:flex">
+                <div className="px-3.5 py-1.5 text-right">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Billing</div>
+                  <div className="text-sm font-bold tabular-nums text-ink-800">₹{inr(totalBilled)}</div>
+                </div>
+                <div className="px-3.5 py-1.5 text-right">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Cases</div>
+                  <div className="text-sm font-bold tabular-nums text-ink-800">{inr(totalCases)}</div>
+                </div>
+              </div>
+            ) : (
               <button
                 onClick={onLoadSampleData}
-                className="hidden sm:inline-flex items-center gap-1.5 bg-[#eb8a23] hover:bg-[#d97917] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow transition cursor-pointer"
+                className="hidden items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 sm:inline-flex"
                 id="load-sample-btn"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Load Sample MC Report</span>
+                <Sparkles className="h-3.5 w-3.5" />
+                Load sample report
               </button>
             )}
 
-            {/* User Profile / Role Switcher */}
-            <div className="relative">
+            {/* Account menu */}
+            <div className="relative" ref={menuRef}>
               <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-3 bg-[#1e293b] hover:bg-slate-800 text-slate-200 pl-3 pr-2.5 py-1.5 rounded-xl border border-slate-700/60 transition cursor-pointer text-xs"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="flex items-center gap-2.5 rounded-xl border border-transparent py-1 pl-1 pr-2 hover:border-slate-200 hover:bg-slate-50"
                 id="user-profile-menu-button"
               >
-                <div className="text-right hidden sm:block">
-                  <p className="text-[10px] text-slate-400 leading-none capitalize font-semibold">{user?.role || 'Admin'}</p>
-                  <p className="text-xs text-white font-bold leading-tight truncate max-w-[110px]">{user?.name || 'User'}</p>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-[#1e293b] border-2 border-[#eb8a23] flex items-center justify-center text-white font-bold text-xs shadow-inner">
-                  {user?.avatar || 'U'}
-                </div>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-ink text-xs font-bold text-white shadow-sm ring-2 ring-white">
+                  {initials}
+                </span>
+                <span className="hidden text-left sm:block">
+                  <span className="block max-w-[130px] truncate text-xs font-semibold text-ink-800">{user?.name || 'User'}</span>
+                  <span className="block text-[11px] capitalize text-slate-500">{user?.role}</span>
+                </span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`}
+                />
               </button>
 
-              {/* User Dropdown */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <div className="font-bold text-sm text-[#2d3e50]">{user?.name}</div>
-                    <div className="text-xs text-slate-500">{user?.email}</div>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] text-[#eb8a23] font-semibold">
-                      <ShieldCheck className="w-3 h-3" />
-                      Role: {user?.role.toUpperCase()}
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div
+                    role="menu"
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.12 } }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ transformOrigin: 'top right' }}
+                    className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+                  >
+                    <div className="border-b border-slate-100 px-4 py-3">
+                      <div className="truncate text-sm font-semibold text-ink-900">{user?.name}</div>
+                      <div className="truncate text-xs text-slate-500">{user?.email}</div>
+                      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
+                        <ShieldCheck className="h-3 w-3" />
+                        <span className="capitalize">{user?.role}</span>
+                      </div>
                     </div>
-                  </div>
-
-
-                  <div className="border-t border-slate-100 mt-2 pt-1">
                     <button
+                      role="menuitem"
                       onClick={() => {
+                        setMenuOpen(false);
                         logout();
-                        setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Sign Out
+                      <LogOut className="h-4 w-4" />
+                      Sign out
                     </button>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
 
-        {/* Navigation Step Tabs */}
-        <nav className="flex space-x-1 overflow-x-auto py-2 scrollbar-none" id="main-nav-tabs">
+        {/* Workflow tabs */}
+        <nav
+          className="no-scrollbar -mb-px flex gap-1 overflow-x-auto pb-2"
+          id="main-nav-tabs"
+          aria-label="Workflow steps"
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const active = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 id={`tab-${item.id}`}
-                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-[#eb8a23] text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                aria-current={active ? 'page' : undefined}
+                className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium ${
+                  active ? 'text-ink-900' : 'text-slate-500 hover:bg-slate-100/80 hover:text-ink-800'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      item.badgeColor || (isActive ? 'bg-white/30 text-white' : 'bg-slate-700 text-slate-300')
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
+                {active && (
+                  <motion.span
+                    layoutId="nav-active-pill"
+                    className="absolute inset-0 rounded-lg bg-white shadow-sm ring-1 ring-slate-200"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                  />
                 )}
+                <span className="relative flex items-center gap-2">
+                  {item.step ? (
+                    <span
+                      className={`flex h-[18px] w-[18px] items-center justify-center rounded-md text-[10px] font-bold ${
+                        active ? 'bg-brand-600 text-white' : 'bg-slate-200/70 text-slate-500'
+                      }`}
+                    >
+                      {item.step}
+                    </span>
+                  ) : (
+                    <Icon className={`h-4 w-4 ${active ? 'text-brand-600' : 'text-slate-400'}`} />
+                  )}
+                  {item.label}
+                  {item.badge && (
+                    <span
+                      className={`rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums ${
+                        item.badgeTone === 'warn' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}

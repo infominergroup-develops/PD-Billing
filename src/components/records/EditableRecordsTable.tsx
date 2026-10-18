@@ -25,7 +25,7 @@ interface EditableRecordsTableProps {
   rates: RateRule[];
   onUpdateCase: (updatedCase: CaseRecord, changeReason?: string) => void;
   onAddCase: (newCase: CaseRecord) => void;
-  onDeleteCase: (clientApplicationNumber: string) => void;
+  onDeleteCase: (rowId: string) => void;
   onExportFilteredExcel: (filteredCases: CaseRecord[]) => void;
 }
 
@@ -114,16 +114,16 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
   };
 
   return (
-    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="case-records-panel">
+    <div className="space-y-6 w-full mx-auto" id="case-records-panel">
       {/* Header & Controls */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-[#2d3e50] text-white flex items-center justify-center text-xs font-black">
-                4
+              <span className="w-6 h-6 rounded-lg bg-brand-600 text-white shadow-sm flex items-center justify-center text-xs font-bold">
+                3
               </span>
-              <h1 className="text-xl font-black text-[#2d3e50]">Case Records &amp; Billing Overrides</h1>
+              <h1 className="text-xl font-bold text-ink">Case Records &amp; Billing Overrides</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1">
               Search, filter, inspect, and edit any case record. Manual rate overrides are tracked in the audit trail.
@@ -134,10 +134,10 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
             {canEditRecords && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-[#2d3e50] hover:bg-[#1e293b] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 bg-ink hover:bg-ink-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
                 id="add-single-case-btn"
               >
-                <Plus className="w-4 h-4 text-[#eb8a23]" />
+                <Plus className="w-4 h-4 text-brand-600" />
                 <span>Add Case Record</span>
               </button>
             )}
@@ -166,7 +166,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                 setCurrentPage(1);
               }}
               placeholder="Search ID, applicant, city..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand-500"
             />
           </div>
 
@@ -178,7 +178,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                 setStatusFilter(e.target.value as any);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-[#eb8a23]"
+              className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-brand-500"
             >
               <option value="all">All Statuses ({baseFilteredForStatus.length})</option>
               <option value="billable">Billable Only ({baseFilteredForStatus.filter((c) => c.isBillable).length})</option>
@@ -197,7 +197,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                 setClientFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-[#eb8a23]"
+              className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-brand-500"
             >
               <option value="all">All Clients ({uniqueClients.length})</option>
               {uniqueClients.map((client) => (
@@ -216,7 +216,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                 setStateFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-[#eb8a23]"
+              className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 focus:outline-none focus:border-brand-500"
             >
               <option value="all">All States ({uniqueStates.length})</option>
               {uniqueStates.map((st) => (
@@ -233,7 +233,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto max-h-[600px] scrollbar-thin">
           <table className="w-full text-left text-xs border-collapse" id="editable-records-table">
-            <thead className="bg-[#2d3e50] text-white font-bold sticky top-0 z-10">
+            <thead className="bg-ink text-white font-bold sticky top-0 z-10">
               <tr>
                 <th className="p-3 whitespace-nowrap">Client Application Number</th>
                 <th className="p-3 whitespace-nowrap">Client (DB)</th>
@@ -271,7 +271,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                           : ''
                       }`}
                     >
-                      <td className="p-3 font-mono font-bold text-[#2d3e50] whitespace-nowrap">
+                      <td className="p-3 font-mono font-bold text-ink whitespace-nowrap">
                         {c.clientApplicationNumber}
                       </td>
                       <td className="p-3 text-slate-800 font-semibold max-w-[160px] truncate" title={c.clientDb}>
@@ -285,13 +285,13 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                       </td>
                       <td className="p-3 text-slate-600 whitespace-nowrap">{c.state || '—'}</td>
                       <td className="p-3 text-slate-600 whitespace-nowrap">{c.product || '—'}</td>
-                      <td className="p-3 text-center font-bold text-[#eb8a23]">
+                      <td className="p-3 text-center font-bold text-brand-600">
                         {c.kmUsedForBilling !== null && c.kmUsedForBilling !== undefined ? `${c.kmUsedForBilling} km` : '—'}
                       </td>
                       <td className="p-3 whitespace-nowrap text-slate-600">
                         {c.slabApplied || '—'}
                       </td>
-                      <td className="p-3 text-right font-black text-[#2d3e50] whitespace-nowrap">
+                      <td className="p-3 text-right font-bold text-ink whitespace-nowrap">
                         {c.billingRate > 0 ? `₹${c.billingRate.toLocaleString('en-IN')}` : '₹0'}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
@@ -315,7 +315,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                       </td>
                       <td className="p-3 text-slate-500 max-w-[160px] truncate" title={c.remarks}>
                         {c.isManualOverride && (
-                          <span className="text-[#eb8a23] font-bold mr-1">[Override]</span>
+                          <span className="text-brand-600 font-bold mr-1">[Override]</span>
                         )}
                         {c.remarks || '—'}
                       </td>
@@ -323,7 +323,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setEditingCase(c)}
-                            className="p-1.5 text-slate-500 hover:text-[#eb8a23] hover:bg-orange-50 rounded-lg transition cursor-pointer"
+                            className="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-orange-50 rounded-lg transition cursor-pointer"
                             title="Edit Record & Rate Override"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -332,7 +332,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                             <button
                               onClick={() => {
                                 if (window.confirm(`Delete case ${c.clientApplicationNumber}?`)) {
-                                  onDeleteCase(c.clientApplicationNumber);
+                                  onDeleteCase(c.rowId);
                                 }
                               }}
                               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
@@ -384,13 +384,13 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
       {/* Edit / Override Record Modal */}
       {editingCase && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-bold text-[#2d3e50]">
+                <h3 className="text-base font-bold text-ink">
                   Edit Case &amp; Billing Rate
                 </h3>
-                <span className="font-mono text-xs text-[#eb8a23] font-bold">
+                <span className="font-mono text-xs text-brand-600 font-bold">
                   {editingCase.clientApplicationNumber}
                 </span>
               </div>
@@ -410,7 +410,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                     type="text"
                     value={editingCase.applicantName}
                     onChange={(e) => setEditingCase({ ...editingCase, applicantName: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                     required
                   />
                 </div>
@@ -421,7 +421,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                     type="text"
                     value={editingCase.clientDb}
                     onChange={(e) => setEditingCase({ ...editingCase, clientDb: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                     required
                   />
                 </div>
@@ -433,7 +433,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                     list="branch-list"
                     value={editingCase.branch}
                     onChange={(e) => setEditingCase({ ...editingCase, branch: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                   />
                   <datalist id="branch-list">
                     {uniqueBranches.map((b) => (
@@ -448,7 +448,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                     type="text"
                     value={editingCase.city}
                     onChange={(e) => setEditingCase({ ...editingCase, city: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                   />
                 </div>
 
@@ -458,7 +458,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                     type="text"
                     value={editingCase.state}
                     onChange={(e) => setEditingCase({ ...editingCase, state: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                   />
                 </div>
 
@@ -474,7 +474,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                       })
                     }
                     placeholder="Enter KM"
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23] font-bold text-[#eb8a23]"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500 font-bold text-brand-600"
                   />
                 </div>
 
@@ -484,7 +484,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                       type="checkbox"
                       checked={!!editingCase.isLeftover}
                       onChange={(e) => setEditingCase({ ...editingCase, isLeftover: e.target.checked })}
-                      className="w-4 h-4 text-[#eb8a23] rounded focus:ring-[#eb8a23]"
+                      className="w-4 h-4 text-brand-600 rounded focus:ring-brand-500"
                     />
                     Mark as Month-End Leftover
                   </label>
@@ -494,8 +494,8 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
 
               {/* Rate Override Box */}
               <div className="p-4 bg-orange-50/60 rounded-xl border border-orange-200 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2d3e50]">
-                  <DollarSign className="w-4 h-4 text-[#eb8a23]" />
+                <div className="flex items-center gap-2 text-xs font-bold text-ink">
+                  <DollarSign className="w-4 h-4 text-brand-600" />
                   <span>Manual Billing Rate Override</span>
                 </div>
 
@@ -512,7 +512,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                           isManualOverride: true,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-lg border border-orange-300 focus:outline-none focus:border-[#eb8a23] font-black text-sm bg-white text-[#2d3e50]"
+                      className="w-full px-3 py-1.5 rounded-lg border border-orange-300 focus:outline-none focus:border-brand-500 font-bold text-sm bg-white text-ink"
                       required
                     />
                   </div>
@@ -530,7 +530,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                         })
                       }
                       placeholder="e.g. Special agreed rate / Senior approval"
-                      className="w-full px-3 py-1.5 rounded-lg border border-orange-300 focus:outline-none focus:border-[#eb8a23] bg-white"
+                      className="w-full px-3 py-1.5 rounded-lg border border-orange-300 focus:outline-none focus:border-brand-500 bg-white"
                       required={editingCase.isManualOverride}
                     />
                   </div>
@@ -547,7 +547,7 @@ export const EditableRecordsTable: React.FC<EditableRecordsTableProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#eb8a23] hover:bg-[#d97917] text-white font-bold cursor-pointer shadow"
+                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold cursor-pointer shadow"
                 >
                   Save Changes &amp; Log
                 </button>
@@ -596,8 +596,10 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
     e.preventDefault();
 
     const finalRate = Number(billingRate) || 0;
+    const rowId = `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const newRecord: CaseRecord = {
-      id: `case_${Date.now()}`,
+      id: `case_${rowId}`,
+      rowId,
       clientApplicationNumber,
       clientAppNo: `APP-${Date.now().toString().slice(-6)}`,
       applicantName: applicantName || 'Manual Entry',
@@ -625,9 +627,9 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <h3 className="text-base font-bold text-[#2d3e50]">Add New Case Record</h3>
+          <h3 className="text-base font-bold text-ink">Add New Case Record</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
             ✕
           </button>
@@ -641,7 +643,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="text"
                 value={clientApplicationNumber}
                 onChange={(e) => setCaseId(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23] font-mono"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500 font-mono"
                 required
               />
             </div>
@@ -652,7 +654,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="text"
                 value={applicantName}
                 onChange={(e) => setApplicantName(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                 placeholder="Full Name"
                 required
               />
@@ -664,7 +666,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="text"
                 value={clientDb}
                 onChange={(e) => setClientDb(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
@@ -676,7 +678,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 list="add-branch-list"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
               />
               <datalist id="add-branch-list">
                 {uniqueBranches.map((b) => (
@@ -691,7 +693,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -701,7 +703,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23]"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -711,7 +713,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="number"
                 value={km}
                 onChange={(e) => setKm(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23] font-bold text-[#eb8a23]"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500 font-bold text-brand-600"
               />
             </div>
 
@@ -721,7 +723,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
                 type="number"
                 value={billingRate}
                 onChange={(e) => setBillingRate(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-[#eb8a23] font-bold text-emerald-700"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500 font-bold text-emerald-700"
                 required
               />
             </div>
@@ -737,7 +739,7 @@ const AddNewCaseModal: React.FC<AddNewCaseModalProps> = ({ rates, uniqueBranches
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-[#eb8a23] hover:bg-[#d97917] text-white font-bold cursor-pointer shadow"
+              className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold cursor-pointer shadow"
             >
               Create Case
             </button>

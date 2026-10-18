@@ -1,12 +1,38 @@
 import React from 'react';
+import logoUrl from '../../images/Logo.jpeg';
 
 interface InfominerLogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** 'dark' = for light surfaces (the official wordmark); 'light' = for dark surfaces. */
   variant?: 'dark' | 'light';
   showTagline?: boolean;
   withBackground?: boolean;
 }
+
+// Logo artwork is 2000×416 (≈4.8:1).
+const HEIGHTS = { sm: 22, md: 28, lg: 40, xl: 52 } as const;
+
+/** The three-panel brand mark as vector (used on dark surfaces and as the favicon). */
+export const InfominerMark: React.FC<{ className?: string; title?: string; style?: React.CSSProperties }> = ({
+  className = '',
+  title,
+  style,
+}) => (
+  <svg
+    viewBox="0 0 364 416"
+    className={className}
+    style={{ width: 'auto', ...style }}
+    role={title ? 'img' : undefined}
+    aria-hidden={title ? undefined : true}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {title && <title>{title}</title>}
+    <polygon fill="#F2B544" points="0,108 212,0 212,210 0,318" />
+    <polygon fill="#E86B2E" points="77,157 289,48 289,257 77,365" />
+    <polygon fill="#364C63" points="151,207 363,99 363,306 151,415" />
+  </svg>
+);
 
 export const InfominerLogo: React.FC<InfominerLogoProps> = ({
   className = '',
@@ -15,68 +41,39 @@ export const InfominerLogo: React.FC<InfominerLogoProps> = ({
   showTagline = false,
   withBackground = false,
 }) => {
-  const sizeMap = {
-    sm: { height: 26, textClass: 'text-lg tracking-tight', tagClass: 'text-[9px]' },
-    md: { height: 36, textClass: 'text-2xl tracking-tight', tagClass: 'text-[10px]' },
-    lg: { height: 48, textClass: 'text-3xl tracking-tight', tagClass: 'text-xs' },
-    xl: { height: 60, textClass: 'text-4xl tracking-tight', tagClass: 'text-sm' },
-  };
-
-  const { height, textClass, tagClass } = sizeMap[size];
-  const textColor = variant === 'light' ? 'text-white' : 'text-[#2d3e50]';
-  const subTextColor = variant === 'light' ? 'text-slate-300' : 'text-slate-500';
+  const h = HEIGHTS[size];
 
   return (
     <div
       className={`inline-flex items-center gap-3 select-none ${
-        withBackground
-          ? variant === 'light'
-            ? 'bg-[#1e293b] p-2.5 rounded-xl border border-slate-700'
-            : 'bg-white p-2.5 rounded-xl shadow-sm border border-slate-200'
-          : ''
+        withBackground ? 'bg-white p-2.5 rounded-xl shadow-sm border border-slate-200' : ''
       } ${className}`}
-      id="infominer-brand-logo"
     >
-      {/* Precision Brand Icon: Three Cascading Rhombuses */}
-      <svg
-        style={{ height: `${height}px`, width: 'auto' }}
-        viewBox="0 0 100 80"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="flex-shrink-0 drop-shadow-sm transition-transform hover:scale-105 duration-200"
-      >
-        {/* Layer 1: Leftmost / Back - Yellow-Orange (#e8a020) */}
-        <polygon
-          points="6,26 30,12 36,44 12,58"
-          fill="#e8a020"
-          className="transition-all"
+      {variant === 'dark' || withBackground ? (
+        // multiply blends the JPEG's white background into tinted light surfaces
+        <img
+          src={logoUrl}
+          alt="Infominer"
+          style={{ height: h, width: 'auto' }}
+          className="mix-blend-multiply"
+          decoding="async"
+          draggable={false}
         />
-        {/* Layer 2: Center - Primary Brand Orange (#eb8a23) */}
-        <polygon
-          points="20,36 44,22 50,56 26,70"
-          fill="#eb8a23"
-          className="transition-all"
-        />
-        {/* Layer 3: Rightmost / Front - Primary Dark Blue/Slate (#2d3e50) */}
-        <polygon
-          points="38,44 68,26 74,64 44,82"
-          fill={variant === 'light' ? '#3b82f6' : '#2d3e50'}
-          className="transition-all"
-        />
-      </svg>
-
-      {/* Brand Wordmark & Optional Subtitle */}
-      <div className="flex flex-col">
-        <div className={`font-black font-sans leading-none flex items-center ${textClass} ${textColor}`}>
-          <span>Infominer</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#eb8a23] ml-1 self-baseline mt-1"></span>
-        </div>
-        {showTagline && (
-          <span className={`font-medium tracking-wide uppercase mt-0.5 ${tagClass} ${subTextColor}`}>
-            PD Verification &amp; Billing
+      ) : (
+        <span className="inline-flex items-center gap-2.5" aria-label="Infominer">
+          <InfominerMark className="shrink-0" style={{ height: h }} />
+          <span className="font-bold tracking-tight text-white" style={{ fontSize: h * 0.82, lineHeight: 1 }}>
+            Infominer
           </span>
-        )}
-      </div>
+        </span>
+      )}
+      {showTagline && (
+        <span className="hidden sm:block border-l border-slate-200 pl-3 text-[11px] font-semibold uppercase tracking-[0.08em] leading-tight text-slate-500">
+          PD Billing
+          <br />
+          &amp; Audit
+        </span>
+      )}
     </div>
   );
 };

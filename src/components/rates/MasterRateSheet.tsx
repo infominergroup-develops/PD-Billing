@@ -246,16 +246,16 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
     });
 
   return (
-    <div className="space-y-6 w-full mx-auto animate-in fade-in duration-200" id="master-rates-container">
+    <div className="space-y-6 w-full mx-auto" id="master-rates-container">
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-[#2d3e50] text-white flex items-center justify-center text-xs font-black">
-                2
+              <span className="w-6 h-6 rounded-lg bg-brand-600 text-white shadow-sm flex items-center justify-center text-xs font-bold">
+                5
               </span>
-              <h1 className="text-xl font-black text-[#2d3e50]">Master Rate Sheet Engine</h1>
+              <h1 className="text-xl font-bold text-ink">Master Rate Sheet Engine</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
               Configure tiered billing slabs or flat rates for each institution and state.
@@ -266,10 +266,10 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onProceedToMapping}
-              className="inline-flex items-center gap-1.5 bg-[#eb8a23] hover:bg-[#d97917] text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer"
               id="proceed-to-mapping-btn"
             >
-              <span>Step 3: Client Mapping</span>
+              <span>Client mapping</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -284,7 +284,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search bank / NBFC or state..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand-500"
             />
           </div>
 
@@ -292,7 +292,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
             <select
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
-              className="w-full pl-3 pr-8 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#eb8a23] appearance-none bg-white"
+              className="w-full pl-3 pr-8 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand-500 appearance-none bg-white"
             >
               <option value="">All Products</option>
               <option value="pd">PD / Personal Discussion</option>
@@ -305,10 +305,10 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
             {canEditRates && (
               <button
                 onClick={handleAddRow}
-                className="inline-flex items-center gap-1.5 bg-[#2d3e50] hover:bg-[#1e293b] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 bg-ink hover:bg-ink-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
                 id="add-rate-row-btn"
               >
-                <Plus className="w-3.5 h-3.5 text-[#eb8a23]" />
+                <Plus className="w-3.5 h-3.5 text-brand-600" />
                 <span>Add Client Rule</span>
               </button>
             )}
@@ -356,7 +356,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto max-h-[580px] scrollbar-thin">
           <table className="w-full text-left text-xs border-collapse" id="master-rate-table">
-            <thead className="bg-[#2d3e50] text-white font-bold sticky top-0 z-10">
+            <thead className="bg-ink text-white font-bold sticky top-0 z-10">
               <tr>
                 <th className="p-3 w-10 text-center">#</th>
                 <th className="p-3 min-w-[200px]">Client / Institution Name *</th>
@@ -388,7 +388,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         value={r.client}
                         disabled={!canEditRates}
                         onChange={(e) => handleCellChange(i, 'client', e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent font-bold text-[#2d3e50]"
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent font-bold text-ink"
                       />
                     </td>
                     <td className="p-2">
@@ -398,7 +398,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates}
                         placeholder="All Branches"
                         onChange={(e) => handleCellChange(i, 'branch', e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent text-slate-600"
                       />
                     </td>
                     <td className="p-2">
@@ -408,7 +408,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates}
                         placeholder="All Cities"
                         onChange={(e) => handleCellChange(i, 'city', e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent text-slate-600"
                       />
                     </td>
                     <td className="p-2">
@@ -418,7 +418,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates}
                         placeholder="All Products"
                         onChange={(e) => handleCellChange(i, 'product', e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent text-slate-600"
                       />
                     </td>
                     <td className="p-2">
@@ -428,7 +428,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates}
                         placeholder="All States"
                         onChange={(e) => handleCellChange(i, 'state', e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent text-slate-600"
+                        className="w-full px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent text-slate-600"
                       />
                     </td>
                     <td className="p-2 bg-blue-50/30">
@@ -438,7 +438,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates}
                         placeholder="e.g. 800"
                         onChange={(e) => handleCellChange(i, 'flat', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent font-bold text-blue-700"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent font-bold text-blue-700"
                       />
                     </td>
                     <td className="p-2">
@@ -448,7 +448,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates || isFlat}
                         placeholder="Max KM"
                         onChange={(e) => handleCellChange(i, 's1k', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent disabled:opacity-30"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent disabled:opacity-30"
                       />
                     </td>
                     <td className="p-2">
@@ -458,7 +458,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates || isFlat}
                         placeholder="Rate ₹"
                         onChange={(e) => handleCellChange(i, 's1r', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent font-bold text-emerald-700 disabled:opacity-30"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent font-bold text-emerald-700 disabled:opacity-30"
                       />
                     </td>
                     <td className="p-2">
@@ -468,7 +468,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates || isFlat}
                         placeholder="Max KM"
                         onChange={(e) => handleCellChange(i, 's2k', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent disabled:opacity-30"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent disabled:opacity-30"
                       />
                     </td>
                     <td className="p-2">
@@ -478,7 +478,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates || isFlat}
                         placeholder="Rate ₹"
                         onChange={(e) => handleCellChange(i, 's2r', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent font-bold text-emerald-700 disabled:opacity-30"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent font-bold text-emerald-700 disabled:opacity-30"
                       />
                     </td>
                     <td className="p-2">
@@ -488,7 +488,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates || isFlat}
                         placeholder="Beyond ₹"
                         onChange={(e) => handleCellChange(i, 's3r', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent font-bold text-emerald-800 disabled:opacity-30"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent font-bold text-emerald-800 disabled:opacity-30"
                       />
                     </td>
                     <td className="p-2">
@@ -498,7 +498,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                         disabled={!canEditRates}
                         placeholder="Other ₹"
                         onChange={(e) => handleCellChange(i, 'other', e.target.value)}
-                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-[#eb8a23] focus:bg-white bg-transparent"
+                        className="w-full px-2 py-1 text-center rounded border border-transparent hover:border-slate-200 focus:border-brand-500 focus:bg-white bg-transparent"
                       />
                     </td>
                     {canEditRates && (
@@ -522,10 +522,10 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
       {/* Add Client Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-[#2d3e50] flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[#eb8a23]" />
+              <h3 className="font-bold text-ink flex items-center gap-2">
+                <Plus className="w-4 h-4 text-brand-600" />
                 Add New Client Rate Rule
               </h3>
               <button
@@ -544,7 +544,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                   value={newClientData.client || ''}
                   onChange={(e) => setNewClientData({ ...newClientData, client: e.target.value })}
                   placeholder="e.g. HDFC Bank"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                 />
               </div>
 
@@ -556,7 +556,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                     value={newClientData.state || ''}
                     onChange={(e) => setNewClientData({ ...newClientData, state: e.target.value })}
                     placeholder="All States"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                   />
                 </div>
                 <div>
@@ -566,7 +566,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                     value={newClientData.branch || ''}
                     onChange={(e) => setNewClientData({ ...newClientData, branch: e.target.value })}
                     placeholder="All Branches"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                   />
                 </div>
                 <div>
@@ -576,7 +576,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                     value={newClientData.city || ''}
                     onChange={(e) => setNewClientData({ ...newClientData, city: e.target.value })}
                     placeholder="All Cities"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                   />
                 </div>
                 <div>
@@ -586,7 +586,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                     value={newClientData.product || ''}
                     onChange={(e) => setNewClientData({ ...newClientData, product: e.target.value })}
                     placeholder="All Products"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                   />
                 </div>
               </div>
@@ -612,7 +612,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                       type="number"
                       value={newClientData.s1k ?? ''}
                       onChange={(e) => setNewClientData({ ...newClientData, s1k: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                     />
                   </div>
                   <div>
@@ -632,7 +632,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                       type="number"
                       value={newClientData.s2k ?? ''}
                       onChange={(e) => setNewClientData({ ...newClientData, s2k: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                     />
                   </div>
                   <div>
@@ -660,7 +660,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
                       type="number"
                       value={newClientData.other ?? ''}
                       onChange={(e) => setNewClientData({ ...newClientData, other: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#eb8a23]"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-brand-500"
                     />
                   </div>
                 </div>
@@ -676,7 +676,7 @@ export const MasterRateSheet: React.FC<MasterRateSheetProps> = ({
               </button>
               <button
                 onClick={handleSaveNewClient}
-                className="px-6 py-2 rounded-xl text-sm font-bold bg-[#eb8a23] text-white hover:bg-[#d97917] transition shadow-sm flex items-center gap-2"
+                className="px-6 py-2 rounded-xl text-sm font-bold bg-brand-600 text-white hover:bg-brand-700 transition shadow-sm flex items-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Save Client Rate

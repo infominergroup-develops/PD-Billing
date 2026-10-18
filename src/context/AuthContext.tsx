@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
-import { DEMO_USERS } from '../constants/defaultData';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  /** True until the server has confirmed (or rejected) the existing session cookie. */
+  isCheckingSession: boolean;
   login: (email: string, password?: string) => Promise<boolean>;
   logout: () => void;
   switchUser: (role: UserRole) => void;
@@ -18,64 +19,63 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Fired by API helpers when the server answers 401, so the UI returns to the login screen. */
+export const SESSION_EXPIRED_EVENT = 'pd:session-expired';
+
+const toUser = (u: { id: string; name: string; email: string; role: UserRole }): User => ({
+  id: u.id,
+  name: u.name,
+  email: u.email,
+  role: u.role,
+  avatar: u.email.slice(0, 2).toUpperCase(),
+  lastLogin: new Date().toISOString(),
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem('infominer_auth_v2');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return null;
-  });
+  // The session is an HttpOnly cookie the browser script cannot read or forge;
+  // the user object here is only a display copy of what the server confirmed.
+  const [user, setUser] = useState<User | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('infominer_auth_v2', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('infominer_auth_v2');
-    }
-  }, [user]);
+    localStorage.removeItem('infominer_auth_v2'); // legacy, client-trusted login record
+    let cancelled = false;
+    fetch('/api/me', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => !cancelled && setUser(u ? toUser(u) : null))
+      .catch(() => !cancelled && setUser(null))
+      .finally(() => !cancelled && setIsCheckingSession(false));
+
+    const onExpired = () => setUser(null);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    };
+  }, []);
 
   const login = async (email: string, password?: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
-      }
-
-      const userData = await response.json();
-
-      const authenticatedUser: User = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        avatar: userData.email.slice(0, 2).toUpperCase(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      setUser(authenticatedUser);
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Login failed');
+    setUser(toUser(data));
+    return true;
   };
 
-  const switchUser = (role: UserRole) => {
-    // Disabled in real backend mode to prevent unauthorized role switching
-    console.warn('Switch user is disabled in production.');
+  const switchUser = (_role: UserRole) => {
+    console.warn('Switch user is disabled: roles come from the server session.');
   };
 
   const logout = () => {
     setUser(null);
+    fetch('/api/logout', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(
+      () => {}
+    );
   };
 
   const isAdmin = user?.role === 'admin';
@@ -87,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
+        isCheckingSession,
         login,
         logout,
         switchUser,
