@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": "22.x"
+    "node": "22.x",
+    "npm": "11.x"
   },
   "scripts": {
     "dev": "concurrently \"vite --port=3000 --host=0.0.0.0\" \"node server.js\"",
